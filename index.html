@@ -90,19 +90,11 @@
     text-align: center;
     color: var(--ink-mute);
     font-size: 12px;
-    margin: 18px auto 0;
+    margin: 14px auto 0;
     line-height: 1.4;
     letter-spacing: 0;
+    max-width: 480px;
   }
-  .subtitle {
-    color: var(--ink-mute);
-    font-size: 13px;
-    margin: 14px auto 0;
-    line-height: 1.5;
-    max-width: 520px;
-    text-align: center;
-  }
-
   .form {
     display: flex;
     align-items: stretch;
@@ -154,7 +146,22 @@
   .status.ok { visibility: hidden; }
   .status.warn { color: var(--ink-dim); }
 
-  .post-actions { margin-top: 22px; }
+  /* Action chips directly below the photograph row (NASA-style placement). */
+  .row-actions {
+    margin-top: 18px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    opacity: 0;
+    transition: opacity 300ms ease;
+  }
+  .row-actions.show { opacity: 1; }
+  .row-actions[hidden] { display: none; }
+  .row-actions-sep {
+    color: var(--ink-mute);
+    user-select: none;
+  }
 
   /* The output: a row of photographs that fuse into one composition. */
   .row {
@@ -303,17 +310,6 @@
 
   html { scroll-behavior: smooth; }
 
-  .post-actions {
-    display: flex;
-    justify-content: center;
-    gap: 28px;
-    margin-top: 32px;
-    opacity: 0;
-    transition: opacity 400ms ease;
-  }
-  .post-actions.show { opacity: 1; }
-  .post-actions[hidden] { display: none; }
-
   .link-btn {
     background: none;
     border: none;
@@ -328,23 +324,10 @@
   }
   .link-btn:hover:not(:disabled) { color: var(--ink); }
   .link-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-  .link-btn.inline {
-    padding: 0;
-    font-size: inherit;
-    color: var(--ink-dim);
-    text-decoration: underline;
-    text-underline-offset: 3px;
-    text-decoration-color: var(--line);
-    text-decoration-thickness: 1px;
-  }
-  .link-btn.inline:hover:not(:disabled) {
-    color: var(--ink);
-    text-decoration-color: var(--ink-dim);
-  }
 
   @media (prefers-reduced-motion: reduce) {
-    .tile { animation: none; opacity: 1; transform: none; }
-    .credit, .post-actions { transition: none; }
+    .tile { animation: none; opacity: 1; transition: none; }
+    .row-actions { transition: none; }
     .tile img { transition: none; }
   }
 
@@ -365,8 +348,17 @@
   .about .links {
     display: flex;
     justify-content: center;
-    gap: 22px;
-    margin-top: 18px;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 18px;
+    margin-top: 22px;
+  }
+  .about .link-label {
+    color: var(--ink-mute);
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    margin-right: 4px;
   }
   .about .links a {
     color: var(--ink-dim);
@@ -387,32 +379,33 @@
   <div class="page-shell">
     <header class="page-header">
       <h1>An alphabet by Laura Paresky Gould</h1>
-      <p class="description">Each letter is found in a photograph from Miami Color Theory — Paresky Gould's ongoing study of color, light, and composition in the everyday.</p>
+      <p class="description">Each letter is found in a photograph by Laura Paresky Gould, drawn from her earlier work in color, geometry, and the built environment. Her current ongoing project, <em>Miami Color Theory</em>, is linked below.</p>
     </header>
 
     <section class="stage">
       <nav class="gallery-nav" id="gallery-nav" hidden aria-label="Jump to letter"></nav>
       <div class="row" id="result" data-empty="true" aria-live="polite"></div>
-      <p class="byline">Click any photograph to swap variants · <button class="link-btn inline" id="gallery-toggle" type="button">Show gallery</button></p>
+      <div class="row-actions" id="post-actions" hidden>
+        <button class="link-btn" id="download" type="button">Download</button>
+        <span class="row-actions-sep">·</span>
+        <button class="link-btn" id="gallery-toggle" type="button">Show gallery</button>
+      </div>
+      <p class="byline">Click any photograph to swap variants. Press Enter to re-roll a name.</p>
     </section>
 
     <section class="controls">
       <form class="form" id="form" autocomplete="off">
         <input id="word" type="text" placeholder="Type a name" autocapitalize="off" spellcheck="false" disabled />
-        <button id="enter-btn" type="submit" disabled>Return</button>
+        <button id="enter-btn" type="submit" disabled>Enter</button>
       </form>
-      <p class="subtitle">Type a name to see it spelled in her photographs.</p>
       <div id="status" class="status">Loading…</div>
-      <div class="post-actions" id="post-actions" hidden>
-        <button class="link-btn" id="regenerate" type="button">Regenerate</button>
-        <button class="link-btn" id="download" type="button">Download</button>
-      </div>
     </section>
   </div>
 
   <section id="about" class="about">
-    <p>Each letter is composed from a photograph by Laura Paresky Gould. <span class="i">Miami Color Theory</span> is her ongoing study of color, light, and composition in the everyday — Art Deco facades, lifeguard stations, reflections, shadows, and Miami's pastel palette. A Duke graduate based in Miami, Paresky Gould is the author of <span class="i">Seeing Differently</span> (TRA Publishing).</p>
+    <p>Laura Paresky Gould is a RISD-trained visual artist and motion designer whose practice spans photography, animation, and immersive installations. She began her career creating award-winning motion graphics and brand identities for Nike, NBC, and CBS, and later served as Design Director at <span class="i">Ocean Drive</span> magazine. Her photography has appeared in <span class="i">The New York Times</span>, <span class="i">Vogue</span>, and <span class="i">Condé Nast Traveller</span>, and is included in museum, public, and private collections.</p>
     <p class="links">
+      <span class="link-label">Current project</span>
       <a href="https://www.miamicolortheory.com" target="_blank" rel="noopener">miamicolortheory.com</a>
       <a href="https://www.instagram.com/miamicolortheory" target="_blank" rel="noopener">@miamicolortheory</a>
     </p>
@@ -425,7 +418,6 @@
   const form = document.getElementById("form");
   const wordInput = document.getElementById("word");
   const enterBtn = document.getElementById("enter-btn");
-  const regenBtn = document.getElementById("regenerate");
   const downloadBtn = document.getElementById("download");
   const statusEl = document.getElementById("status");
   const resultEl = document.getElementById("result");
@@ -502,11 +494,18 @@
     e.preventDefault();
     const word = wordInput.value;
     if (!word.trim()) {
-      renderHero(HERO_WORD);
+      // Empty input: if we have a persisted name on screen, re-roll it; else reset to default.
+      if (lastRendered && lastRendered !== HERO_WORD && lastRendered !== "__gallery__") {
+        const newChoice = chooseVariants(lastRendered, { rerandomize: true });
+        currentChoice = newChoice;
+        buildRow(lastRendered, newChoice);
+      } else {
+        renderHero(HERO_WORD);
+      }
       return;
     }
-    // First Return on a new word → fresh staggered entrance.
-    // Return again on the same word → re-roll variants with crossfade.
+    // First Enter on a new word → fresh entrance.
+    // Enter again on the same word → re-roll variants.
     const sameWord = !isShowingAlphabet && lastRendered === word && resultEl.children.length > 0;
     render({ rerandomize: sameWord });
   });
@@ -577,12 +576,15 @@
     lastRendered = word;
     resultEl.dataset.empty = "false";
 
-    // Lay out and trigger the snap-in. Decoupled so each runs reliably.
-    fitRow();
-    setTimeout(() => resultEl.classList.add("entering"), 30);
+    // Wait for layout to be applied (so tiles are sized correctly) before revealing.
+    // Tiles are opacity 0 until .entering, so any reflow happens invisibly.
+    await Promise.race([fitRow(), new Promise((r) => setTimeout(r, 600))]);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      resultEl.classList.add("entering");
+    }));
 
     postActions.hidden = false;
-    requestAnimationFrame(() => postActions.classList.add("show"));
+    setTimeout(() => postActions.classList.add("show"), 100);
   }
 
   // Render every photograph in the library, in alphabetical order. Wraps freely.
@@ -747,10 +749,11 @@
       resultEl.appendChild(tile);
     });
 
-    // Phase 3: lay out and snap-in. Decoupled from fitRow's image-wait promise so
-    // it always runs even if an image's load event misfires.
-    fitRow();
-    setTimeout(() => resultEl.classList.add("entering"), 30);
+    // Phase 3: wait for layout to settle (tiles invisible during this), then snap-in L→R.
+    await Promise.race([fitRow(), new Promise((r) => setTimeout(r, 600))]);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      resultEl.classList.add("entering");
+    }));
   }
 
   // Pick the largest tile height (within min/max) that lets the whole word fit on one line.
@@ -837,20 +840,6 @@
     // After all swaps, re-fit the row (new variants may have different aspects).
     Promise.all(swapPromises).then(() => fitRow());
   }
-
-  regenBtn.addEventListener("click", () => {
-    if (isShowingGallery) return; // no concept of regenerating the gallery
-    if (isShowingAlphabet) {
-      renderHero(lastRendered || HERO_WORD);
-      return;
-    }
-    // Re-roll the currently-shown name's variants (using lastRendered, NOT the input,
-    // since the user may have cleared the input after their first Enter).
-    if (!lastRendered || lastRendered === "__gallery__") return;
-    const newChoice = chooseVariants(lastRendered, { rerandomize: true });
-    currentChoice = newChoice;
-    buildRow(lastRendered, newChoice);
-  });
 
   galleryToggleBtn.addEventListener("click", () => {
     if (isShowingGallery) {
