@@ -174,11 +174,8 @@
     position: relative;
     flex-shrink: 0;
     cursor: pointer;
-    /* Initial state for staggered entrance — JS sets --i (tile index) */
+    /* Hidden by default — visibility is granted by .row.entering or mode classes below. */
     opacity: 0;
-    transform: translateY(8px);
-    animation: tile-enter var(--enter-duration) var(--enter-easing) forwards;
-    animation-delay: calc(var(--i, 0) * var(--stagger));
   }
   .tile.space, .tile.missing { cursor: default; }
   .tile img {
@@ -188,6 +185,21 @@
     transition: opacity 250ms ease;
   }
   .tile:hover img { opacity: 0.92; }
+
+  /* Phase 2: snap-in (no fade) — each tile becomes visible at its staggered delay. */
+  .row.entering .tile {
+    animation: snap-in 1ms linear forwards;
+    animation-delay: calc(var(--i, 0) * 40ms);
+  }
+  @keyframes snap-in { to { opacity: 1; } }
+
+  /* Phase 1: fade-out — existing tiles' images fade to transparent L→R before swap. */
+  .row.fading-out .tile { opacity: 1; }
+  .row.fading-out .tile img {
+    opacity: 0;
+    transition: opacity 140ms ease;
+    transition-delay: calc(var(--i, 0) * 40ms);
+  }
   .tile.space {
     background: transparent;
     width: calc(var(--tile-h) * 0.16);
@@ -229,18 +241,6 @@
   }
   .row.crossfade .tile img.swap-out { opacity: 0; }
 
-  /* Alphabet/hero mode: no per-tile stagger (whole row fades in at once). */
-  .row.alphabet .tile {
-    opacity: 1;
-    transform: none;
-    animation: none;
-  }
-  .row.alphabet { animation: row-fade 600ms ease; }
-  @keyframes row-fade {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-
   /* Gallery mode: every photograph in alphabetical order, tiles fixed size, wraps freely. */
   .row.gallery {
     --tile-h: 160px;
@@ -250,6 +250,8 @@
   }
   .row.gallery .tile {
     cursor: default;
+    opacity: 1;
+    animation: none;
   }
   .row.gallery .tile:hover img {
     opacity: 1;
@@ -508,31 +510,47 @@
     render({ rerandomize: sameWord });
   });
 
-  // When user clears the input, return to the default hero state.
-  wordInput.addEventListener("input", () => {
-    if (!wordInput.value.trim() && !isShowingAlphabet && library.size > 0) {
-      renderHero(HERO_WORD);
-    }
-  });
+  // Animation timing — match the values in CSS (.row.fading-out, .row.entering)
+  const ANIM_FADE_OUT_MS = 140;
+  const ANIM_STAGGER_MS = 40;
 
-  // Render the default hero word (typically "alphabet"). Whole row fades in at once.
-  function renderHero(word) {
+  // Phase 1: fade out the current row's tiles L→R, then clear the DOM.
+  // Skipped when exiting gallery view (would be ~200 tiles → way too long).
+  async function fadeOutExistingRow() {
+    // Detect gallery mode by the presence of letter dividers (skip fade in that case).
+    if (resultEl.querySelector(".gallery-letter-divider")) return;
+    const existing = [...resultEl.children];
+    if (existing.length === 0) return;
+    existing.forEach((t, i) => t.style.setProperty("--i", String(i)));
+    resultEl.classList.remove("entering", "crossfade");
+    resultEl.classList.add("fading-out");
+    const lastIdx = existing.length - 1;
+    await new Promise((r) => setTimeout(r, lastIdx * ANIM_STAGGER_MS + ANIM_FADE_OUT_MS + 20));
+    resultEl.classList.remove("fading-out");
+  }
+
+  // Render the default hero word (typically "alphabet"). Tiles snap in L→R.
+  async function renderHero(word) {
     isShowingAlphabet = true;
     isShowingGallery = false;
+    if (galleryNav) galleryNav.hidden = true;
+    if (galleryToggleBtn) galleryToggleBtn.textContent = "Show gallery";
+
+    await fadeOutExistingRow();
+
     const newChoice = new Map();
     [...word].forEach((ch, i) => {
       const variants = library.get(normalizeKey(ch));
       if (variants && variants.length) newChoice.set(i, pickRandom(variants));
     });
 
-    resultEl.classList.remove("crossfade", "gallery");
-    resultEl.classList.add("alphabet");
+    resultEl.classList.remove("crossfade", "gallery", "entering");
     resultEl.style.removeProperty("--tile-h");
     resultEl.innerHTML = "";
-    if (galleryNav) galleryNav.hidden = true;
 
     [...word].forEach((ch, i) => {
       const tile = document.createElement("div");
+      tile.style.setProperty("--i", String(i));
       const variants = library.get(normalizeKey(ch));
       if (variants && variants.length) {
         tile.className = "tile";
@@ -557,9 +575,9 @@
     currentChoice = newChoice;
     lastRendered = word;
     resultEl.dataset.empty = "false";
-    fitRow();
 
-    if (galleryToggleBtn) galleryToggleBtn.textContent = "Show gallery";
+    await fitRow();
+    requestAnimationFrame(() => resultEl.classList.add("entering"));
 
     postActions.hidden = false;
     requestAnimationFrame(() => postActions.classList.add("show"));
@@ -649,53 +667,53 @@
     return next;
   }
 
-  function render({ rerandomize }) {
-    const word = wordInput.value;
+  function render({ rerandomize, word: explicitWord } = {}) {
+    const word = explicitWord !== undefined ? explicitWord : wordInput.value;
 
     if (!word.trim()) {
-      // Empty input: fall back to the alphabet identity.
-      renderAlphabet();
+      renderHero(HERO_WORD);
       return;
     }
 
     isShowingAlphabet = false;
     isShowingGallery = false;
-    resultEl.classList.remove("alphabet", "gallery");
     if (galleryToggleBtn) galleryToggleBtn.textContent = "Show gallery";
     if (galleryNav) galleryNav.hidden = true;
 
-    const sameWord = lastRendered === word && resultEl.children.length > 0 && !isShowingAlphabet;
     const newChoice = chooseVariants(word, { rerandomize });
-
-    if (sameWord && rerandomize) {
-      crossfadeSwap(word, newChoice);
-    } else {
-      buildRow(word, newChoice);
-    }
-
+    const existingLen = resultEl.children.length;
     currentChoice = newChoice;
     lastRendered = word;
+
+    buildRow(word, newChoice);
 
     const hasAnyImage = [...newChoice.values()].length > 0;
     resultEl.dataset.empty = hasAnyImage ? "false" : "true";
 
     if (hasAnyImage) {
-      const lastIndex = Math.max(0, [...word].length - 1);
-      const tilesDoneAt = (sameWord && rerandomize)
-        ? CROSSFADE_MS
-        : lastIndex * STAGGER_MS + ENTER_MS;
+      // Estimate when the snap-in finishes; reveal post-actions just after.
+      const lastIdxOut = Math.max(0, existingLen - 1);
+      const lastIdxIn = Math.max(0, [...word].length - 1);
+      const totalAnimMs = lastIdxOut * ANIM_STAGGER_MS + ANIM_FADE_OUT_MS + lastIdxIn * ANIM_STAGGER_MS + 80;
       postActions.hidden = false;
-      window.setTimeout(() => postActions.classList.add("show"), tilesDoneAt + 80);
+      window.setTimeout(() => postActions.classList.add("show"), totalAnimMs);
     } else {
       postActions.classList.remove("show");
       postActions.hidden = true;
     }
   }
 
-  function buildRow(word, choice) {
-    resultEl.classList.remove("crossfade");
-    resultEl.innerHTML = "";
+  async function buildRow(word, choice) {
     postActions.classList.remove("show");
+    if (galleryNav) galleryNav.hidden = true;
+
+    // Phase 1: fade out existing tiles L→R, then clear.
+    await fadeOutExistingRow();
+
+    // Phase 2: build new tiles (invisible until .entering kicks in).
+    resultEl.classList.remove("crossfade", "entering", "gallery");
+    resultEl.style.removeProperty("--tile-h");
+    resultEl.innerHTML = "";
 
     [...word].forEach((ch, i) => {
       const tile = document.createElement("div");
@@ -727,8 +745,9 @@
       resultEl.appendChild(tile);
     });
 
-    // Fit the row to one line when possible.
-    fitRow();
+    // Phase 3: wait for images to load, fit, then snap-in L→R.
+    await fitRow();
+    requestAnimationFrame(() => resultEl.classList.add("entering"));
   }
 
   // Pick the largest tile height (within min/max) that lets the whole word fit on one line.
@@ -820,9 +839,14 @@
     if (isShowingGallery) return; // no concept of regenerating the gallery
     if (isShowingAlphabet) {
       renderHero(lastRendered || HERO_WORD);
-    } else {
-      render({ rerandomize: true });
+      return;
     }
+    // Re-roll the currently-shown name's variants (using lastRendered, NOT the input,
+    // since the user may have cleared the input after their first Enter).
+    if (!lastRendered || lastRendered === "__gallery__") return;
+    const newChoice = chooseVariants(lastRendered, { rerandomize: true });
+    currentChoice = newChoice;
+    buildRow(lastRendered, newChoice);
   });
 
   galleryToggleBtn.addEventListener("click", () => {
