@@ -1,0 +1,4 @@
+.DS_Store
+*.icloud
+.vercel
+node_modules
