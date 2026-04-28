@@ -321,6 +321,9 @@
     max-width: 1200px;
   }
   .gallery-nav[hidden] { display: none !important; }
+
+  /* In gallery view, hide the byline (the Back button replaces "Hide gallery"). */
+  .row.gallery ~ .byline { display: none; }
   .gallery-nav a {
     color: var(--ink-dim);
     text-decoration: none;
