@@ -174,8 +174,9 @@
     position: relative;
     flex-shrink: 0;
     cursor: pointer;
-    /* Hidden by default — visibility is granted by .row.entering or mode classes below. */
+    /* Hidden by default — flipped to visible by .row.entering or mode classes below. */
     opacity: 0;
+    transition: opacity 0ms;
   }
   .tile.space, .tile.missing { cursor: default; }
   .tile img {
@@ -186,12 +187,12 @@
   }
   .tile:hover img { opacity: 0.92; }
 
-  /* Phase 2: snap-in (no fade) — each tile becomes visible at its staggered delay. */
+  /* Phase 2: snap-in — each tile flips to opacity 1 at its staggered delay (no fade). */
   .row.entering .tile {
-    animation: snap-in 1ms linear forwards;
-    animation-delay: calc(var(--i, 0) * 40ms);
+    opacity: 1;
+    transition: opacity 0ms;
+    transition-delay: calc(var(--i, 0) * 40ms);
   }
-  @keyframes snap-in { to { opacity: 1; } }
 
   /* Phase 1: fade-out — existing tiles' images fade to transparent L→R before swap. */
   .row.fading-out .tile { opacity: 1; }
@@ -576,8 +577,9 @@
     lastRendered = word;
     resultEl.dataset.empty = "false";
 
-    await fitRow();
-    requestAnimationFrame(() => resultEl.classList.add("entering"));
+    // Lay out and trigger the snap-in. Decoupled so each runs reliably.
+    fitRow();
+    setTimeout(() => resultEl.classList.add("entering"), 30);
 
     postActions.hidden = false;
     requestAnimationFrame(() => postActions.classList.add("show"));
@@ -745,9 +747,10 @@
       resultEl.appendChild(tile);
     });
 
-    // Phase 3: wait for images to load, fit, then snap-in L→R.
-    await fitRow();
-    requestAnimationFrame(() => resultEl.classList.add("entering"));
+    // Phase 3: lay out and snap-in. Decoupled from fitRow's image-wait promise so
+    // it always runs even if an image's load event misfires.
+    fitRow();
+    setTimeout(() => resultEl.classList.add("entering"), 30);
   }
 
   // Pick the largest tile height (within min/max) that lets the whole word fit on one line.
@@ -760,16 +763,16 @@
     if (!tiles.length) return;
 
     const imgs = tiles.map((t) => t.querySelector("img")).filter(Boolean);
-    await Promise.all(
-      imgs.map((img) =>
-        img.complete && img.naturalWidth
-          ? Promise.resolve()
-          : new Promise((res) => {
-              img.onload = res;
-              img.onerror = res;
-            })
-      )
-    );
+    // Wait for each image with a 600ms cap. img.decode() reliably fulfills regardless
+    // of whether the load event already fired.
+    await Promise.race([
+      Promise.all(
+        imgs.map((img) =>
+          img.decode().catch(() => {})
+        )
+      ),
+      new Promise((r) => setTimeout(r, 600)),
+    ]);
     if (myToken !== fitToken) return; // stale
 
     const styles = getComputedStyle(resultEl);
