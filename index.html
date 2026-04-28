@@ -100,7 +100,7 @@
     align-items: stretch;
     justify-content: center;
     gap: 8px;
-    max-width: 460px;
+    max-width: 520px;
     margin: 0 auto;
   }
   .form input[type="text"] {
@@ -146,21 +146,48 @@
   .status.ok { visibility: hidden; }
   .status.warn { color: var(--ink-dim); }
 
-  /* Action chips directly below the photograph row (NASA-style placement). */
-  .row-actions {
-    margin-top: 18px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 12px;
-    opacity: 0;
-    transition: opacity 300ms ease;
+  /* Inline link inside the byline (used for Show gallery toggle). */
+  .link-btn-inline {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--ink-dim);
+    font: inherit;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-color: var(--line);
+    cursor: pointer;
+    transition: color 150ms ease;
   }
-  .row-actions.show { opacity: 1; }
-  .row-actions[hidden] { display: none; }
-  .row-actions-sep {
+  .link-btn-inline:hover:not(:disabled) {
+    color: var(--ink);
+    text-decoration-color: var(--ink-dim);
+  }
+  .link-btn-inline:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Download icon button — sits next to Enter in the form. */
+  .icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    padding: 0;
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    color: var(--ink-2);
+    cursor: pointer;
+    font-family: inherit;
+    transition: color 150ms, border-color 150ms;
+    flex-shrink: 0;
+  }
+  .icon-btn:hover:not(:disabled) {
+    color: var(--ink);
+    border-color: #1a1a1a;
+  }
+  .icon-btn:disabled {
     color: var(--ink-mute);
-    user-select: none;
+    cursor: not-allowed;
   }
 
   /* The output: a row of photographs that fuse into one composition. */
@@ -385,18 +412,20 @@
     <section class="stage">
       <nav class="gallery-nav" id="gallery-nav" hidden aria-label="Jump to letter"></nav>
       <div class="row" id="result" data-empty="true" aria-live="polite"></div>
-      <div class="row-actions" id="post-actions" hidden>
-        <button class="link-btn" id="download" type="button">Download</button>
-        <span class="row-actions-sep">·</span>
-        <button class="link-btn" id="gallery-toggle" type="button">Show gallery</button>
-      </div>
-      <p class="byline">Click any photograph to swap variants. Press Enter to re-roll a name.</p>
+      <p class="byline">Click any photograph to swap variants. Press Enter to re-roll a name. · <button class="link-btn-inline" id="gallery-toggle" type="button">Show gallery</button></p>
     </section>
 
     <section class="controls">
       <form class="form" id="form" autocomplete="off">
         <input id="word" type="text" placeholder="Type a name" autocapitalize="off" spellcheck="false" disabled />
         <button id="enter-btn" type="submit" disabled>Enter</button>
+        <button id="download" type="button" class="icon-btn" aria-label="Download" title="Download" disabled>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+        </button>
       </form>
       <div id="status" class="status">Loading…</div>
     </section>
@@ -421,7 +450,6 @@
   const downloadBtn = document.getElementById("download");
   const statusEl = document.getElementById("status");
   const resultEl = document.getElementById("result");
-  const postActions = document.getElementById("post-actions");
   const galleryToggleBtn = document.getElementById("gallery-toggle");
   const galleryNav = document.getElementById("gallery-nav");
 
@@ -478,6 +506,7 @@
       setStatus(`${letterCount} letters · ${imageCount} artworks`, "ok");
       wordInput.disabled = false;
       enterBtn.disabled = false;
+      if (downloadBtn) downloadBtn.disabled = false;
       wordInput.focus();
       // Show the default word ("alphabet") as the page's hero identity.
       renderHero(HERO_WORD);
@@ -582,9 +611,6 @@
     requestAnimationFrame(() => requestAnimationFrame(() => {
       resultEl.classList.add("entering");
     }));
-
-    postActions.hidden = false;
-    setTimeout(() => postActions.classList.add("show"), 100);
   }
 
   // Render every photograph in the library, in alphabetical order. Wraps freely.
@@ -638,9 +664,6 @@
 
     if (galleryToggleBtn) galleryToggleBtn.textContent = "Hide gallery";
 
-    // Hide post-actions in gallery mode (Regenerate/Download don't apply)
-    postActions.classList.remove("show");
-    postActions.hidden = true;
   }
 
   // Pick variants for the current word.
@@ -694,21 +717,9 @@
     const hasAnyImage = [...newChoice.values()].length > 0;
     resultEl.dataset.empty = hasAnyImage ? "false" : "true";
 
-    if (hasAnyImage) {
-      // Estimate when the snap-in finishes; reveal post-actions just after.
-      const lastIdxOut = Math.max(0, existingLen - 1);
-      const lastIdxIn = Math.max(0, [...word].length - 1);
-      const totalAnimMs = lastIdxOut * ANIM_STAGGER_MS + ANIM_FADE_OUT_MS + lastIdxIn * ANIM_STAGGER_MS + 80;
-      postActions.hidden = false;
-      window.setTimeout(() => postActions.classList.add("show"), totalAnimMs);
-    } else {
-      postActions.classList.remove("show");
-      postActions.hidden = true;
-    }
   }
 
   async function buildRow(word, choice) {
-    postActions.classList.remove("show");
     if (galleryNav) galleryNav.hidden = true;
 
     // Phase 1: fade out existing tiles L→R, then clear.
