@@ -42,7 +42,7 @@
   }
   .page-header {
     text-align: center;
-    padding: 56px 24px 0;
+    padding: 36px 24px 0;
     flex-shrink: 0;
   }
   .page-header h1 {
@@ -66,16 +66,26 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 32px 24px;
+    padding: 16px 24px 8px;
     width: 100%;
     max-width: var(--max);
     margin: 0 auto;
-    min-height: 320px;
+    min-height: 280px;
   }
   .controls {
     text-align: center;
-    padding: 0 24px 36px;
+    padding: 4px 24px 24px;
     flex-shrink: 0;
+  }
+  @media (max-width: 720px) {
+    .page-header { padding: 22px 16px 0; }
+    .page-header h1 { font-size: 20px; }
+    .page-header .description { font-size: 12px; line-height: 1.5; }
+    .stage { padding: 12px 12px 8px; min-height: 0; }
+    .controls { padding: 0 12px 16px; }
+    .byline { font-size: 11px; }
+    .form { max-width: 100%; }
+    .form input[type="text"] { font-size: 16px; /* prevents iOS zoom on focus */ }
   }
 
   footer {
@@ -146,7 +156,7 @@
   .status.ok { visibility: hidden; }
   .status.warn { color: var(--ink-dim); }
 
-  /* Inline link inside the byline (used for Show gallery toggle). */
+  /* Inline link inside the byline (used for See gallery toggle). */
   .link-btn-inline {
     background: none;
     border: none;
@@ -320,6 +330,21 @@
     padding: 2px 0;
   }
   .gallery-nav a:hover { color: var(--ink); }
+  .gallery-back {
+    background: none;
+    border: 1px solid var(--ink);
+    border-radius: 4px;
+    padding: 4px 10px;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--ink);
+    cursor: pointer;
+    margin-right: 8px;
+    transition: background 150ms, color 150ms;
+  }
+  .gallery-back:hover { background: var(--ink); color: #fff; }
 
   /* Section divider between letters in the gallery (full-width flex break). */
   .gallery-letter-divider {
@@ -359,10 +384,20 @@
   }
 
   .about {
-    margin: 120px auto 64px;
+    margin: 80px auto 0;
     padding: 0 28px;
-    max-width: 560px;
+    max-width: 600px;
     text-align: center;
+  }
+  .about + .about { margin-top: 56px; }
+  .about:last-of-type { margin-bottom: 56px; }
+  .about .eyebrow {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    margin: 0 0 16px;
   }
   .about p {
     color: var(--ink-mute);
@@ -412,7 +447,7 @@
     <section class="stage">
       <nav class="gallery-nav" id="gallery-nav" hidden aria-label="Jump to letter"></nav>
       <div class="row" id="result" data-empty="true" aria-live="polite"></div>
-      <p class="byline">Click any photograph to swap variants. Press Enter to re-roll a name. · <button class="link-btn-inline" id="gallery-toggle" type="button">Show gallery</button></p>
+      <p class="byline">Click any photograph to swap variants. Press Enter to re-roll a name. · <button class="link-btn-inline" id="gallery-toggle" type="button">See gallery</button></p>
     </section>
 
     <section class="controls">
@@ -420,7 +455,7 @@
         <input id="word" type="text" placeholder="Type a name" autocapitalize="off" spellcheck="false" disabled />
         <button id="enter-btn" type="submit" disabled>Enter</button>
         <button id="download" type="button" class="icon-btn" aria-label="Download" title="Download" disabled>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
             <polyline points="7 10 12 15 17 10"/>
             <line x1="12" y1="15" x2="12" y2="3"/>
@@ -431,7 +466,13 @@
     </section>
   </div>
 
+  <section class="about about-work">
+    <h3 class="eyebrow">About this work</h3>
+    <p>This selection is drawn from over 3,000 alphabet photographs shot on Fuji Velvia 35mm slide film by artist and photographer Laura Paresky Gould in the 1990s as part of her <span class="i">Graphic Axioms</span> series. Letter "E" photographs from the series were animated by the artist into an award-winning identity campaign for E! Entertainment Television, widely seen during the O.J. trial. The <span class="i">Graphic Axioms</span> series was exhibited in solo shows at G. Ray Hawkins Gallery and Robert Klein Gallery and is held in museums and collections worldwide.</p>
+  </section>
+
   <section id="about" class="about">
+    <h3 class="eyebrow">About the artist</h3>
     <p>Laura Paresky Gould is a RISD-trained visual artist and motion designer whose practice spans photography, animation, and immersive installations. She began her career creating award-winning motion graphics and brand identities for Nike, NBC, and CBS, and later served as Design Director at <span class="i">Ocean Drive</span> magazine. Her photography has appeared in <span class="i">The New York Times</span>, <span class="i">Vogue</span>, and <span class="i">Condé Nast Traveller</span>, and is included in museum, public, and private collections.</p>
     <p class="links">
       <span class="link-label">Current project</span>
@@ -517,6 +558,16 @@
   }
   loadManifest();
 
+  // On mobile, when the input is focused the iOS keyboard pushes the page up
+  // so the photographs scroll out of view. Override: scroll back to the top
+  // so the row stays visible alongside the input.
+  wordInput.addEventListener("focus", () => {
+    if (window.innerWidth > 720) return;
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }, 280);
+  });
+
   function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
   form.addEventListener("submit", (e) => {
@@ -563,7 +614,7 @@
     isShowingAlphabet = true;
     isShowingGallery = false;
     if (galleryNav) galleryNav.hidden = true;
-    if (galleryToggleBtn) galleryToggleBtn.textContent = "Show gallery";
+    if (galleryToggleBtn) galleryToggleBtn.textContent = "See gallery";
 
     await fadeOutExistingRow();
 
@@ -626,8 +677,18 @@
 
     const sortedKeys = [...library.keys()].sort();
 
-    // Build the sticky letter nav.
+    // Build the sticky letter nav. Prepend a clear "Back" button.
     galleryNav.innerHTML = "";
+    const backBtn = document.createElement("button");
+    backBtn.type = "button";
+    backBtn.className = "gallery-back";
+    backBtn.textContent = "← Back";
+    backBtn.addEventListener("click", () => {
+      wordInput.value = "";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      renderHero(HERO_WORD);
+    });
+    galleryNav.appendChild(backBtn);
     for (const key of sortedKeys) {
       const a = document.createElement("a");
       a.href = `#letter-${key}`;
@@ -704,7 +765,7 @@
 
     isShowingAlphabet = false;
     isShowingGallery = false;
-    if (galleryToggleBtn) galleryToggleBtn.textContent = "Show gallery";
+    if (galleryToggleBtn) galleryToggleBtn.textContent = "See gallery";
     if (galleryNav) galleryNav.hidden = true;
 
     const newChoice = chooseVariants(word, { rerandomize });
