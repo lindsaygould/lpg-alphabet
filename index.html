@@ -63,6 +63,7 @@
     margin: 0 auto;
   }
   .stage {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -86,6 +87,8 @@
     .byline { font-size: 11px; }
     .form { max-width: 100%; }
     .form input[type="text"] { font-size: 16px; /* prevents iOS zoom on focus */ }
+    /* Width slider is desktop-only — multi-word names on mobile fit fine. */
+    .width-slider { display: none !important; }
   }
 
   footer {
@@ -156,47 +159,56 @@
   .status.ok { visibility: hidden; }
   .status.warn { color: var(--ink-dim); }
 
-  /* Customization toolbar: subtle controls for multi-word outputs (size, align,
-     break-on-click). Hidden for single-word inputs and gallery view. */
-  .custom-toolbar {
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 16px;
-    margin: 12px 0 0;
-    padding: 0 4px;
-    color: var(--ink-mute);
-  }
-  .custom-toolbar[hidden] { display: none; }
-  .custom-toolbar .group {
-    display: inline-flex;
-    align-items: center;
-    gap: 2px;
-  }
-  .custom-toolbar .group-label {
-    font-size: 9px;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    margin-right: 6px;
-    color: var(--ink-mute);
-  }
-  .custom-toolbar .seg {
+  /* Width slider: thin vertical control on the right of the stage that narrows
+     or widens the output area. Narrower forces wrapping; wider fits more on
+     one line. Hidden for single-word inputs and gallery view. */
+  .width-slider {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    -webkit-appearance: slider-vertical;
+    appearance: slider-vertical;
+    writing-mode: vertical-lr;
+    width: 14px;
+    height: 140px;
     background: transparent;
-    border: 1px solid var(--line);
-    padding: 4px 8px;
-    font: inherit;
-    font-size: 11px;
-    cursor: pointer;
-    color: var(--ink-dim);
-    border-radius: 3px;
-    min-width: 24px;
-    text-align: center;
-    transition: color 150ms ease, border-color 150ms ease;
+    outline: none;
+    cursor: ns-resize;
+    opacity: 0.55;
+    transition: opacity 200ms ease;
   }
-  .custom-toolbar .seg:hover { color: var(--ink); border-color: var(--ink-dim); }
-  .custom-toolbar .seg.active { color: var(--ink); border-color: var(--ink); }
-  .custom-toolbar .seg svg { display: block; }
+  .width-slider:hover { opacity: 1; }
+  .width-slider:focus { opacity: 1; }
+  .width-slider[hidden] { display: none; }
+  .width-slider::-webkit-slider-runnable-track {
+    width: 1px;
+    background: var(--line-strong);
+    border-radius: 1px;
+  }
+  .width-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: var(--ink);
+    border: 2px solid var(--bg);
+    cursor: ns-resize;
+    box-shadow: 0 0 0 1px var(--ink-mute);
+  }
+  .width-slider::-moz-range-track {
+    width: 1px;
+    background: var(--line-strong);
+  }
+  .width-slider::-moz-range-thumb {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: var(--ink);
+    border: 2px solid var(--bg);
+    cursor: ns-resize;
+  }
 
   /* Inline link inside the byline (used for See gallery toggle). */
   .link-btn-inline {
@@ -253,9 +265,6 @@
     row-gap: calc(var(--gap) * 2);
   }
   .row[data-empty="true"] { min-height: 0; }
-  .row.align-left { justify-content: flex-start; }
-  .row.align-center { justify-content: center; }
-  .row.align-right { justify-content: flex-end; }
 
   /* Word grouping: letters within a word never wrap; only the row itself wraps
      between words. Single-word inputs always stay on one line. */
@@ -279,11 +288,34 @@
   }
   .tile.missing { cursor: default; }
   .tile.space { cursor: default; }
-  /* In multi-word mode, spaces become click targets that toggle a forced line break. */
+  /* In multi-word mode, spaces are click targets that toggle a forced line break.
+     Hover affordance: a faint "↵" appears whenever the user hovers anywhere on
+     the row (so the click target is discoverable), and becomes prominent on
+     direct hover (so the action is unambiguous). */
   .row.multi-word .tile.space {
     cursor: pointer;
     transition: background 150ms ease;
     border-radius: 2px;
+    position: relative;
+  }
+  .row.multi-word .tile.space:not(.break)::before {
+    content: "↵";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 13px;
+    line-height: 1;
+    color: var(--ink-mute);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 200ms ease, font-size 200ms ease, color 200ms ease;
+  }
+  .row.multi-word:hover .tile.space:not(.break)::before { opacity: 0.4; }
+  .row.multi-word .tile.space:not(.break):hover::before {
+    opacity: 1;
+    font-size: 16px;
+    color: var(--ink);
   }
   .row.multi-word .tile.space:hover { background: rgba(0, 0, 0, 0.04); }
   .tile img {
@@ -313,11 +345,12 @@
     width: calc(var(--tile-h) * 0.16);
   }
   /* Forced line break: spans the full row width so the next word wraps to a
-     new line. Stays clickable (and visually subtle) so the break is reversible. */
+     new line. Always shows a "↵" so the user knows it's a break (and that
+     clicking it again will undo it). */
   .tile.space.break {
     flex-basis: 100%;
     width: 100%;
-    height: 10px;
+    height: 14px;
     margin: 0;
     padding: 0;
     background: transparent;
@@ -328,20 +361,20 @@
     border-radius: 2px;
   }
   .row.multi-word .tile.space.break::before {
-    content: "";
+    content: "↵";
     position: absolute;
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
-    width: 24px;
-    height: 1px;
-    background: var(--ink-mute);
-    opacity: 0.45;
-    transition: opacity 150ms ease, width 150ms ease;
+    font-size: 12px;
+    line-height: 1;
+    color: var(--ink-mute);
+    opacity: 0.6;
+    transition: opacity 150ms ease, color 150ms ease;
   }
   .row.multi-word .tile.space.break:hover::before {
-    opacity: 0.9;
-    width: 48px;
+    opacity: 1;
+    color: var(--ink);
   }
   .tile.missing {
     width: calc(var(--tile-h) * 0.42);
@@ -544,27 +577,8 @@
 
     <section class="stage">
       <nav class="gallery-nav" id="gallery-nav" hidden aria-label="Jump to letter"></nav>
-      <div class="row align-center" id="result" data-empty="true" aria-live="polite"></div>
-      <div class="custom-toolbar" id="custom-toolbar" hidden>
-        <div class="group" role="group" aria-label="Size">
-          <span class="group-label">Size</span>
-          <button class="seg" data-size="s" type="button">S</button>
-          <button class="seg active" data-size="m" type="button">M</button>
-          <button class="seg" data-size="l" type="button">L</button>
-        </div>
-        <div class="group" role="group" aria-label="Alignment">
-          <span class="group-label">Align</span>
-          <button class="seg" data-align="left" type="button" aria-label="Align left">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><line x1="2" y1="3" x2="12" y2="3"/><line x1="2" y1="7" x2="8" y2="7"/><line x1="2" y1="11" x2="10" y2="11"/></svg>
-          </button>
-          <button class="seg active" data-align="center" type="button" aria-label="Center">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><line x1="2" y1="3" x2="12" y2="3"/><line x1="4" y1="7" x2="10" y2="7"/><line x1="3" y1="11" x2="11" y2="11"/></svg>
-          </button>
-          <button class="seg" data-align="right" type="button" aria-label="Align right">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><line x1="2" y1="3" x2="12" y2="3"/><line x1="6" y1="7" x2="12" y2="7"/><line x1="4" y1="11" x2="12" y2="11"/></svg>
-          </button>
-        </div>
-      </div>
+      <div class="row" id="result" data-empty="true" aria-live="polite"></div>
+      <input type="range" id="width-slider" class="width-slider" min="30" max="100" value="100" hidden aria-label="Output width" orient="vertical">
       <p class="byline">Click any photograph to swap variants. Press Enter to re-roll a name. · <button class="link-btn-inline" id="gallery-toggle" type="button">See gallery</button></p>
     </section>
 
@@ -624,33 +638,28 @@
 
   const HERO_WORD = "alphabet";
 
-  // Customization state for multi-word outputs (size, alignment, click-to-break).
-  // All choices are reversible: clicking a different segment switches; clicking a
-  // broken space toggles the break off; submitting a brand-new word resets all.
-  const customToolbar = document.getElementById("custom-toolbar");
-  const SIZE_SCALE = { s: 0.62, m: 1.0, l: 1.55 };
-  let userSize = "m";
-  let userAlign = "center";
+  // Customization for multi-word outputs:
+  //   - A vertical width slider on the right shrinks/widens the row, which makes
+  //     wrapping happen earlier or later (single words still never split).
+  //   - Clicking a space between words toggles a forced line break there.
+  // All choices are reversible: drag the slider back, click a broken space to
+  // undo, or submit a brand-new word to reset everything to defaults.
+  const widthSlider = document.getElementById("width-slider");
 
-  function getUserScale() { return SIZE_SCALE[userSize] || 1.0; }
-
-  function applyAlignClass() {
-    resultEl.classList.remove("align-left", "align-center", "align-right");
-    resultEl.classList.add("align-" + userAlign);
-  }
-
-  function refreshToolbarState() {
-    document.querySelectorAll(".custom-toolbar [data-size]").forEach((b) =>
-      b.classList.toggle("active", b.dataset.size === userSize));
-    document.querySelectorAll(".custom-toolbar [data-align]").forEach((b) =>
-      b.classList.toggle("active", b.dataset.align === userAlign));
+  function applyRowWidth() {
+    if (!widthSlider) return;
+    const pct = parseInt(widthSlider.value, 10) || 100;
+    if (pct >= 100) {
+      resultEl.style.removeProperty("max-width");
+    } else {
+      resultEl.style.maxWidth = pct + "%";
+    }
+    fitRow();
   }
 
   function resetCustomizations() {
-    userSize = "m";
-    userAlign = "center";
-    refreshToolbarState();
-    applyAlignClass();
+    if (widthSlider) widthSlider.value = "100";
+    resultEl.style.removeProperty("max-width");
   }
 
   function wordCount(str) {
@@ -659,25 +668,11 @@
 
   function updateMultiWordState(word) {
     const isMulti = wordCount(word) >= 2 && !isShowingGallery && !isShowingAlphabet;
-    if (customToolbar) customToolbar.hidden = !isMulti;
+    if (widthSlider) widthSlider.hidden = !isMulti;
     resultEl.classList.toggle("multi-word", isMulti);
   }
 
-  // Wire toolbar buttons. Each click switches state and re-fits/re-aligns.
-  document.querySelectorAll(".custom-toolbar [data-size]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      userSize = btn.dataset.size;
-      refreshToolbarState();
-      fitRow();
-    });
-  });
-  document.querySelectorAll(".custom-toolbar [data-align]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      userAlign = btn.dataset.align;
-      refreshToolbarState();
-      applyAlignClass();
-    });
-  });
+  if (widthSlider) widthSlider.addEventListener("input", applyRowWidth);
 
   function setStatus(text, kind) {
     statusEl.textContent = text;
@@ -797,17 +792,15 @@
     isShowingGallery = false;
     if (galleryNav) galleryNav.hidden = true;
     if (galleryToggleBtn) galleryToggleBtn.textContent = "See gallery";
-    if (customToolbar) customToolbar.hidden = true;
+    if (widthSlider) widthSlider.hidden = true;
     resultEl.classList.remove("multi-word");
     resetCustomizations();
 
     await fadeOutExistingRow();
 
-    const newChoice = new Map();
-    [...word].forEach((ch, i) => {
-      const variants = library.get(normalizeKey(ch));
-      if (variants && variants.length) newChoice.set(i, pickRandom(variants));
-    });
+    // Use chooseVariants so the hero word also benefits from smart randomness
+    // (the two A's in "alphabet" are picked from different photos when possible).
+    const newChoice = chooseVariants(word, { rerandomize: true });
 
     resultEl.classList.remove("crossfade", "gallery", "entering");
     resultEl.style.removeProperty("--tile-h");
@@ -921,12 +914,32 @@
 
   }
 
+  // Soft-bias random pick. Items with higher weight are more likely, but every
+  // item with weight > 0 is still reachable. Used by chooseVariants to bias
+  // away from variant repetition without ever forbidding it.
+  function weightedPick(items, weights) {
+    let total = 0;
+    for (const w of weights) total += w;
+    if (total <= 0) return items[Math.floor(Math.random() * items.length)];
+    let r = Math.random() * total;
+    for (let i = 0; i < items.length; i++) {
+      r -= weights[i];
+      if (r <= 0) return items[i];
+    }
+    return items[items.length - 1];
+  }
+
   // Pick variants for the current word.
   // - On a new word, choose fresh randoms per position.
-  // - On regenerate of the same word, pick a *different* variant per position when possible
-  //   (so regenerate visibly changes the photo, not just re-rolls the same one).
+  // - On regenerate of the same word, pick a *different* variant per position when possible.
+  // - Smart randomness: when the word has repeated letters (e.g. "hannah"),
+  //   each new same-letter pick is biased *away* from variants already used in
+  //   this render. The bias halves a variant's weight per prior use, so repeats
+  //   are still possible — just less likely.
   function chooseVariants(word, { rerandomize }) {
     const next = new Map();
+    const usedCount = new Map();
+
     [...word].forEach((ch, i) => {
       if (/\s/.test(ch)) return;
       const key = normalizeKey(ch);
@@ -936,15 +949,20 @@
       const sameWord = lastRendered === word;
       const prev = currentChoice.get(i);
 
+      let chosen;
       if (!rerandomize && sameWord && variants.includes(prev)) {
-        next.set(i, prev);
-      } else if (rerandomize && variants.length > 1 && variants.includes(prev)) {
-        // pick something other than prev
-        const others = variants.filter((u) => u !== prev);
-        next.set(i, pickRandom(others));
+        chosen = prev;
       } else {
-        next.set(i, pickRandom(variants));
+        let pool = variants;
+        if (rerandomize && variants.length > 1 && variants.includes(prev)) {
+          pool = variants.filter((u) => u !== prev);
+        }
+        const weights = pool.map((u) => 1 / (1 + (usedCount.get(u) || 0)));
+        chosen = weightedPick(pool, weights);
       }
+
+      next.set(i, chosen);
+      usedCount.set(chosen, (usedCount.get(chosen) || 0) + 1);
     });
     return next;
   }
@@ -1034,7 +1052,7 @@
     });
 
     updateMultiWordState(word);
-    applyAlignClass();
+    applyRowWidth();
 
     // Phase 3: wait for layout to settle (tiles invisible during this), then snap-in L→R.
     await Promise.race([fitRow(), new Promise((r) => setTimeout(r, 1500))]);
@@ -1127,13 +1145,12 @@
     const sumRatios = ratios.reduce((s, r) => s + r, 0);
     if (!sumRatios) return;
 
-    // Baseline: the height that would fit everything on one line. The user's
-    // size choice (S/M/L) scales this up or down. If the result would overflow
-    // a single line, flex-wrap on .row breaks between words (never within them).
+    // Baseline: the height that would fit everything on one line. If the row's
+    // max-width has been narrowed via the slider, this height drops; once it
+    // hits the min, flex-wrap on .row breaks between words (never within them).
     const rowWidth = resultEl.getBoundingClientRect().width;
     const fittedH = (rowWidth - gap * Math.max(0, tiles.length - 1)) / sumRatios;
-    const scale = getUserScale();
-    const h = Math.max(min, Math.min(max, fittedH * scale));
+    const h = Math.max(min, Math.min(max, fittedH));
     resultEl.style.setProperty("--tile-h", h + "px");
   }
 
@@ -1319,15 +1336,12 @@
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Mirror the on-screen alignment in the PNG.
-    const align = userAlign;
+    // Each line is centered (matching the on-screen layout).
     let y = 0;
     for (let li = 0; li < lineItems.length; li++) {
       const items = lineItems[li];
       const lineW = lineWidths[li];
-      let x = 0;
-      if (align === "center") x = Math.round((totalW - lineW) / 2);
-      else if (align === "right") x = totalW - lineW;
+      let x = Math.round((totalW - lineW) / 2);
       for (const it of items) {
         if (it.kind === "img") {
           ctx.drawImage(it.img, x, y, it.w, TILE_H);
