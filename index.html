@@ -806,12 +806,8 @@
     resultEl.style.removeProperty("--tile-h");
     resultEl.innerHTML = "";
 
-    // Hero is one word — wrap its tiles in a single .word container so layout
-    // logic (word grouping, fitRow) treats it consistently with typed names.
-    const heroWord = document.createElement("div");
-    heroWord.className = "word";
-    resultEl.appendChild(heroWord);
-
+    // Hero is single-word; tiles go directly in .row (no .word wrapper) so the
+    // default layout matches the pre-customization behavior exactly.
     [...word].forEach((ch, i) => {
       const tile = document.createElement("div");
       tile.style.setProperty("--i", String(i));
@@ -835,7 +831,7 @@
         hint.textContent = "no artwork";
         tile.appendChild(hint);
       }
-      heroWord.appendChild(tile);
+      resultEl.appendChild(tile);
     });
 
     currentChoice = newChoice;
@@ -1003,8 +999,10 @@
     resultEl.style.removeProperty("--tile-h");
     resultEl.innerHTML = "";
 
-    // Group letters into .word containers so a single word never wraps internally.
-    // Spaces stay as direct children of .row so the row can wrap between words.
+    // Group letters into .word containers ONLY for multi-word inputs (so multi-
+    // word names never split a word across lines). Single-word inputs render
+    // tiles directly in .row, matching the pre-customization layout exactly.
+    const useWordContainers = wordCount(word) >= 2;
     let currentWord = null;
     [...word].forEach((ch, i) => {
       if (/\s/.test(ch)) {
@@ -1017,12 +1015,6 @@
         return;
       }
       if (isPunctuation(ch)) return;
-
-      if (!currentWord) {
-        currentWord = document.createElement("div");
-        currentWord.className = "word";
-        resultEl.appendChild(currentWord);
-      }
 
       const tile = document.createElement("div");
       tile.style.setProperty("--i", String(i));
@@ -1048,7 +1040,17 @@
         hint.textContent = "no artwork";
         tile.appendChild(hint);
       }
-      currentWord.appendChild(tile);
+
+      if (useWordContainers) {
+        if (!currentWord) {
+          currentWord = document.createElement("div");
+          currentWord.className = "word";
+          resultEl.appendChild(currentWord);
+        }
+        currentWord.appendChild(tile);
+      } else {
+        resultEl.appendChild(tile);
+      }
     });
 
     updateMultiWordState(word);
