@@ -62,6 +62,12 @@
     max-width: 580px;
     margin: 0 auto;
   }
+  .page-header .header-actions {
+    margin: 14px 0 0;
+    font-size: 12px;
+    color: var(--ink-mute);
+    text-align: center;
+  }
   .stage {
     position: relative;
     display: flex;
@@ -86,9 +92,7 @@
     .controls { padding: 12px 12px 16px; }
     .byline { font-size: 11px; }
     .form { max-width: 100%; }
-    .form input[type="text"] { font-size: 16px; /* prevents iOS zoom on focus */ }
-    /* Width slider is desktop-only — multi-word names on mobile fit fine. */
-    .width-slider { display: none !important; }
+    .form textarea { font-size: 16px; /* prevents iOS zoom on focus */ }
   }
 
   footer {
@@ -116,7 +120,7 @@
     max-width: 520px;
     margin: 0 auto;
   }
-  .form input[type="text"] {
+  .form textarea {
     flex: 1;
     padding: 12px 14px;
     border: 1px solid var(--line);
@@ -128,11 +132,31 @@
     font-family: inherit;
     border-radius: 6px;
     transition: border-color 150ms ease;
+    resize: none;
+    line-height: 1.4;
+    min-height: 44px;
+    max-height: 160px;
+    overflow-y: auto;
   }
-  .form input[type="text"]:hover:not(:disabled) { border-color: #d4d4d4; }
-  .form input[type="text"]:focus { border-color: #1a1a1a; }
-  .form input[type="text"]::placeholder { color: var(--ink-mute); }
-  .form input[type="text"]:disabled { background: var(--soft); color: var(--ink-mute); cursor: not-allowed; }
+  .form textarea:hover:not(:disabled) { border-color: #d4d4d4; }
+  .form textarea:focus { border-color: #1a1a1a; }
+  .form textarea::placeholder { color: var(--ink-mute); }
+  .form textarea:disabled { background: var(--soft); color: var(--ink-mute); cursor: not-allowed; }
+  .form-hint {
+    text-align: center;
+    color: var(--ink-mute);
+    font-size: 11px;
+    margin: 8px 0 0;
+  }
+  .form-hint kbd {
+    font-family: inherit;
+    background: var(--soft);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 1px 5px;
+    font-size: 10px;
+    color: var(--ink-dim);
+  }
   .form button {
     padding: 0 18px;
     background: transparent;
@@ -159,122 +183,6 @@
   .status.ok { visibility: hidden; }
   .status.warn { color: var(--ink-dim); }
 
-  /* Width slider: thin vertical control on the right of the stage that narrows
-     or widens the output area. Visible only in edit-formatting mode. */
-  .width-slider {
-    position: absolute;
-    right: 8px;
-    top: 50%;
-    transform: translateY(-50%);
-    -webkit-appearance: slider-vertical;
-    appearance: slider-vertical;
-    writing-mode: vertical-lr;
-    width: 14px;
-    height: 160px;
-    background: transparent;
-    cursor: ns-resize;
-    accent-color: var(--ink);
-    opacity: 0.7;
-    transition: opacity 200ms ease;
-  }
-  .width-slider:hover { opacity: 1; }
-  .width-slider, .width-slider:focus, .width-slider:focus-visible, .width-slider:active {
-    outline: none !important;
-    box-shadow: none !important;
-  }
-  .width-slider[hidden] { display: none; }
-  .width-slider::-webkit-slider-runnable-track {
-    width: 1px;
-    background: var(--ink-mute);
-    border-radius: 1px;
-  }
-  .width-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background: var(--ink);
-    border: 2px solid var(--bg);
-    cursor: ns-resize;
-  }
-  .width-slider::-moz-range-track {
-    width: 1px;
-    background: var(--ink-mute);
-  }
-  .width-slider::-moz-range-thumb {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background: var(--ink);
-    border: 2px solid var(--bg);
-    cursor: ns-resize;
-  }
-
-  /* Edit-formatting toolbar: revealed only after the user clicks "Edit formatting"
-     in the byline. Holds alignment buttons, a reset link, and a Done button.
-     The width slider on the right also becomes visible while this is open. */
-  .edit-toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    align-items: center;
-    gap: 16px;
-    margin: 14px auto 0;
-    padding: 10px 4px 10px;
-    max-width: 520px;
-    color: var(--ink-mute);
-    border-top: 1px solid var(--line);
-    border-bottom: 1px solid var(--line);
-  }
-  .edit-toolbar[hidden] { display: none; }
-  .edit-group {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-  }
-  .edit-actions {
-    display: inline-flex;
-    align-items: center;
-    gap: 14px;
-  }
-  .edit-label {
-    font-size: 9px;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: var(--ink-mute);
-    margin-right: 6px;
-  }
-  .edit-toolbar .seg {
-    background: transparent;
-    border: 1px solid var(--line);
-    padding: 5px 9px;
-    font: inherit;
-    font-size: 11px;
-    cursor: pointer;
-    color: var(--ink-dim);
-    border-radius: 3px;
-    min-width: 26px;
-    text-align: center;
-    transition: color 150ms ease, border-color 150ms ease;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .edit-toolbar .seg:hover { color: var(--ink); border-color: var(--ink-dim); }
-  .edit-toolbar .seg.active { color: var(--ink); border-color: var(--ink); }
-  .edit-toolbar .seg svg { display: block; }
-  .edit-toolbar .seg.primary {
-    background: var(--ink);
-    color: #fff;
-    border-color: var(--ink);
-    padding: 5px 14px;
-  }
-  .edit-toolbar .seg.primary:hover {
-    background: var(--ink-2);
-    border-color: var(--ink-2);
-    color: #fff;
-  }
 
   /* Inline link inside the byline (used for See gallery toggle). */
   .link-btn-inline {
@@ -331,8 +239,6 @@
     row-gap: calc(var(--gap) * 2);
   }
   .row[data-empty="true"] { min-height: 0; }
-  .row.align-left { justify-content: flex-start; }
-  .row.align-right { justify-content: flex-end; }
 
   /* Word grouping: letters within a word never wrap; only the row itself wraps
      between words. Single-word inputs always stay on one line. */
@@ -356,50 +262,9 @@
   }
   .tile.missing { cursor: default; }
   .tile.space { cursor: default; }
-  /* Spaces become interactive only inside edit-formatting mode (.row.editing).
-     Outside edit mode, spaces are static — no hint, no click target, no cursor
-     change — keeping the default reading experience clean.
-     Inside edit mode, every space shows a subtle "↵" at all times so the
-     return-action is immediately visible (since there's no live keyboard
-     cursor like in Instagram Stories). Hover escalates to the full-strength
-     glyph for clear actionability. */
-  .row.editing .tile.space {
-    cursor: pointer;
-    transition: background 150ms ease;
-    border-radius: 2px;
-    position: relative;
-  }
-  .row.editing .tile.space:not(.break)::before {
-    content: "↵";
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 12px;
-    line-height: 1;
-    color: var(--ink-mute);
-    opacity: 0.3;
-    pointer-events: none;
-    transition: opacity 200ms ease, color 200ms ease;
-  }
-  .row.editing:hover .tile.space:not(.break)::before { opacity: 0.6; }
-  .row.editing .tile.space:not(.break):hover::before {
-    opacity: 1;
-    color: var(--ink);
-  }
-  .row.editing .tile.space:hover { background: rgba(0, 0, 0, 0.04); }
-
-  /* Selected space (clicked, awaiting Return). The "↵" is fully visible and
-     bolder; background is a touch stronger than hover so the user can see
-     where they're about to insert/remove a break. Pressing Return commits. */
-  .row.editing .tile.space.selected {
-    background: rgba(0, 0, 0, 0.1);
-  }
-  .row.editing .tile.space.selected::before {
-    opacity: 1 !important;
-    color: var(--ink) !important;
-    font-weight: 500;
-  }
+  /* Spaces and breaks are visually inert — no markers, no click targets. The
+     user controls breaks by typing them directly into the input field
+     (Shift+Enter), so the rendered row just *shows* the layout. */
   .tile img {
     height: 100%;
     width: auto;
@@ -426,38 +291,15 @@
     background: transparent;
     width: calc(var(--tile-h) * 0.16);
   }
-  /* Forced line break: spans the full row width so the next word wraps to a
-     new line. Visually, it's invisible outside edit mode (just whitespace).
-     Inside edit mode, a small "↵" marker indicates the break — same size as
-     the inline hover hints — and clicking it again undoes the break. */
+  /* Forced line break: a zero-marker strip that just enforces the wrap. The
+     wrapped layout itself is the indicator. */
   .tile.space.break {
     flex-basis: 100%;
     width: 100%;
-    height: 8px;
+    height: 6px;
     margin: 0;
     padding: 0;
     background: transparent;
-    position: relative;
-  }
-  .row.editing .tile.space.break {
-    cursor: pointer;
-    height: 12px;
-  }
-  .row.editing .tile.space.break::before {
-    content: "↵";
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 12px;
-    line-height: 1;
-    color: var(--ink-mute);
-    opacity: 0.55;
-    transition: opacity 150ms ease, color 150ms ease;
-  }
-  .row.editing .tile.space.break:hover::before {
-    opacity: 1;
-    color: var(--ink);
   }
   .tile.missing {
     width: calc(var(--tile-h) * 0.42);
@@ -656,36 +498,18 @@
     <header class="page-header">
       <h1>Alphabet by Laura Paresky Gould</h1>
       <p class="description">This selection is drawn from over 3,000 images forming a photographic alphabet, captured on Fuji Velvia 35mm slide film by Laura Paresky Gould in the 1990s.</p>
+      <p class="header-actions"><button class="link-btn-inline" id="gallery-toggle" type="button">See gallery</button></p>
     </header>
 
     <section class="stage">
       <nav class="gallery-nav" id="gallery-nav" hidden aria-label="Jump to letter"></nav>
       <div class="row" id="result" data-empty="true" aria-live="polite"></div>
-      <input type="range" id="width-slider" class="width-slider" min="20" max="100" value="100" hidden aria-label="Output width" orient="vertical">
-      <p class="byline" id="byline"><span id="byline-text">Click any photograph to swap variants. Press Enter to re-roll a name.</span><span id="edit-link-wrap" hidden> · <button class="link-btn-inline" id="edit-toggle" type="button">Edit formatting</button></span> · <button class="link-btn-inline" id="gallery-toggle" type="button">See gallery</button></p>
-      <div class="edit-toolbar" id="edit-toolbar" hidden>
-        <div class="edit-group" role="group" aria-label="Alignment">
-          <span class="edit-label">Align</span>
-          <button class="seg" data-align="left" type="button" aria-label="Align left">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><line x1="2" y1="3" x2="12" y2="3"/><line x1="2" y1="7" x2="8" y2="7"/><line x1="2" y1="11" x2="10" y2="11"/></svg>
-          </button>
-          <button class="seg active" data-align="center" type="button" aria-label="Center">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><line x1="2" y1="3" x2="12" y2="3"/><line x1="4" y1="7" x2="10" y2="7"/><line x1="3" y1="11" x2="11" y2="11"/></svg>
-          </button>
-          <button class="seg" data-align="right" type="button" aria-label="Align right">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><line x1="2" y1="3" x2="12" y2="3"/><line x1="6" y1="7" x2="12" y2="7"/><line x1="4" y1="11" x2="12" y2="11"/></svg>
-          </button>
-        </div>
-        <div class="edit-actions">
-          <button class="link-btn-inline" id="reset-format" type="button">Reset to default</button>
-          <button class="seg primary" id="done-edit" type="button">Done</button>
-        </div>
-      </div>
+      <p class="byline" id="byline">Click any photograph to swap variants. Press Enter to re-roll a name.</p>
     </section>
 
     <section class="controls">
       <form class="form" id="form" autocomplete="off">
-        <input id="word" type="text" placeholder="Type a name" autocapitalize="off" spellcheck="false" disabled />
+        <textarea id="word" placeholder="Type a name" rows="1" autocapitalize="off" spellcheck="false" disabled></textarea>
         <button id="enter-btn" type="submit" disabled>Enter</button>
         <button id="download" type="button" class="icon-btn" aria-label="Download" title="Download" disabled>
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -695,6 +519,7 @@
           </svg>
         </button>
       </form>
+      <p class="form-hint"><kbd>Shift</kbd> + <kbd>Enter</kbd> for a line break · <kbd>Enter</kbd> to render</p>
       <div id="status" class="status">Loading…</div>
     </section>
   </div>
@@ -739,116 +564,11 @@
 
   const HERO_WORD = "alphabet";
 
-  // Multi-word formatting lives behind an explicit "Edit formatting" mode so
-  // the default reading experience stays uncluttered. Inside edit mode the
-  // user sees: a thin width slider on the right, alignment buttons, a tap
-  // target on every space (↵) for inserting/removing line breaks, and a
-  // Done button. All choices are reversible — re-clicking a broken space
-  // undoes it, the alignment toggle switches state, the slider can drag back,
-  // and "Reset to default" clears everything in one click.
-  const widthSlider = document.getElementById("width-slider");
-  const editToolbar = document.getElementById("edit-toolbar");
-  const editToggleBtn = document.getElementById("edit-toggle");
-  const editLinkWrap = document.getElementById("edit-link-wrap");
-  const doneEditBtn = document.getElementById("done-edit");
-  const resetFormatBtn = document.getElementById("reset-format");
-  const bylineText = document.getElementById("byline-text");
-
-  const BYLINE_DEFAULT = "Click any photograph to swap variants. Press Enter to re-roll a name.";
-  const BYLINE_EDIT = "Click between words, then press Return for a line break.";
-
-  let isEditMode = false;
-  let userAlign = "center";
-  let selectedSpace = null; // space tile awaiting a Return commit
-
-  function applyRowWidth() {
-    if (!widthSlider) return;
-    const pct = parseInt(widthSlider.value, 10) || 100;
-    if (pct >= 100) {
-      resultEl.style.removeProperty("max-width");
-    } else {
-      resultEl.style.maxWidth = pct + "%";
-    }
-    fitRow();
-  }
-
-  function applyAlignClass() {
-    resultEl.classList.remove("align-left", "align-right");
-    if (userAlign === "left") resultEl.classList.add("align-left");
-    else if (userAlign === "right") resultEl.classList.add("align-right");
-  }
-
-  function refreshAlignButtons() {
-    document.querySelectorAll(".edit-toolbar [data-align]").forEach((b) =>
-      b.classList.toggle("active", b.dataset.align === userAlign));
-  }
-
-  function resetCustomizations() {
-    if (widthSlider) widthSlider.value = "100";
-    resultEl.style.removeProperty("max-width");
-    resultEl.querySelectorAll(".tile.space.break").forEach((s) => s.classList.remove("break"));
-    userAlign = "center";
-    applyAlignClass();
-    refreshAlignButtons();
-  }
-
-  function clearSelectedSpace() {
-    if (selectedSpace) {
-      selectedSpace.classList.remove("selected");
-      selectedSpace = null;
-    }
-  }
-
-  function enterEditMode() {
-    if (isEditMode) return;
-    isEditMode = true;
-    resultEl.classList.add("editing");
-    if (widthSlider) widthSlider.hidden = false;
-    if (editToolbar) editToolbar.hidden = false;
-    if (bylineText) bylineText.textContent = BYLINE_EDIT;
-    if (editLinkWrap) editLinkWrap.hidden = true;
-  }
-
-  function exitEditMode() {
-    if (!isEditMode) return;
-    isEditMode = false;
-    resultEl.classList.remove("editing");
-    if (widthSlider) widthSlider.hidden = true;
-    if (editToolbar) editToolbar.hidden = true;
-    if (bylineText) bylineText.textContent = BYLINE_DEFAULT;
-    clearSelectedSpace();
-    // Re-show the "Edit formatting" link if we're still on a multi-word render.
-    if (editLinkWrap && resultEl.classList.contains("multi-word")) editLinkWrap.hidden = false;
-  }
-
+  // Line breaks are typed directly into the input (Shift+Enter inserts a
+  // newline, plain Enter renders) — the row simply mirrors what was typed.
   function wordCount(str) {
     return (str || "").trim().split(/\s+/).filter(Boolean).length;
   }
-
-  function updateMultiWordState(word) {
-    const isMulti = wordCount(word) >= 2 && !isShowingGallery && !isShowingAlphabet;
-    // Edit-formatting link is shown only outside edit mode; once the user is
-    // already editing, the toolbar's Done button is the way out.
-    if (editLinkWrap) editLinkWrap.hidden = !isMulti || isEditMode;
-    resultEl.classList.toggle("multi-word", isMulti);
-    if (!isMulti) exitEditMode();
-  }
-
-  // Wire up the edit-formatting controls.
-  if (widthSlider) widthSlider.addEventListener("input", applyRowWidth);
-  if (editToggleBtn) editToggleBtn.addEventListener("click", enterEditMode);
-  if (doneEditBtn) doneEditBtn.addEventListener("click", exitEditMode);
-  if (resetFormatBtn) resetFormatBtn.addEventListener("click", () => {
-    resetCustomizations();
-    fitRow();
-  });
-  document.querySelectorAll(".edit-toolbar [data-align]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      userAlign = btn.dataset.align;
-      refreshAlignButtons();
-      applyAlignClass();
-    });
-  });
 
   function setStatus(text, kind) {
     statusEl.textContent = text;
@@ -923,18 +643,6 @@
 
   form.addEventListener("submit", (e) => {
     e.preventDefault();
-
-    // In edit-formatting mode, Return never regenerates — it commits a
-    // selected break (or does nothing if no space is selected).
-    if (isEditMode) {
-      if (selectedSpace) {
-        selectedSpace.classList.toggle("break");
-        clearSelectedSpace();
-        requestAnimationFrame(() => fitRow());
-      }
-      return;
-    }
-
     const word = wordInput.value;
     if (!word.trim()) {
       // Empty input: if we have a persisted name on screen, re-roll it; else reset to default.
@@ -950,11 +658,21 @@
     // First Enter on a new word → fresh entrance.
     // Enter again on the same word → re-roll variants.
     const sameWord = !isShowingAlphabet && lastRendered === word && !!resultEl.querySelector(".tile");
-    if (!sameWord) {
-      resetCustomizations();
-      exitEditMode();
-    }
     render({ rerandomize: sameWord });
+  });
+
+  // Plain Enter renders; Shift+Enter inserts a newline (which becomes a
+  // forced line break in the output). The textarea grows as the user adds
+  // lines so they can see exactly what they typed.
+  wordInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      form.requestSubmit();
+    }
+  });
+  wordInput.addEventListener("input", () => {
+    wordInput.style.height = "auto";
+    wordInput.style.height = Math.min(160, wordInput.scrollHeight) + "px";
   });
 
   // Animation timing — match the values in CSS (.row.fading-out, .row.entering)
@@ -983,10 +701,6 @@
     isShowingGallery = false;
     if (galleryNav) galleryNav.hidden = true;
     if (galleryToggleBtn) galleryToggleBtn.textContent = "See gallery";
-    exitEditMode();
-    if (editLinkWrap) editLinkWrap.hidden = true;
-    resultEl.classList.remove("multi-word");
-    resetCustomizations();
 
     await fadeOutExistingRow();
 
@@ -1190,15 +904,24 @@
     resultEl.classList.remove("crossfade", "entering", "gallery");
     resultEl.style.removeProperty("--tile-h");
     resultEl.innerHTML = "";
-    // Any space the user had selected is now detached — drop the reference.
-    selectedSpace = null;
 
     // Group letters into .word containers ONLY for multi-word inputs (so multi-
     // word names never split a word across lines). Single-word inputs render
     // tiles directly in .row, matching the pre-customization layout exactly.
+    // Newlines (typed via Shift+Enter) become forced line breaks; spaces stay
+    // as regular gaps that may wrap naturally.
     const useWordContainers = wordCount(word) >= 2;
     let currentWord = null;
     [...word].forEach((ch, i) => {
+      if (ch === "\n") {
+        currentWord = null;
+        const brk = document.createElement("div");
+        brk.className = "tile space break";
+        brk.style.setProperty("--i", String(i));
+        brk.dataset.pos = String(i);
+        resultEl.appendChild(brk);
+        return;
+      }
       if (/\s/.test(ch)) {
         currentWord = null;
         const space = document.createElement("div");
@@ -1247,9 +970,6 @@
       }
     });
 
-    updateMultiWordState(word);
-    applyRowWidth();
-
     // Phase 3: wait for layout to settle (tiles invisible during this), then
     // for 4+ word inputs, balance the wrap so a 9-word top line and 1-word
     // bottom line becomes 5 + 5 (etc.). Skip for 2-3 word names so things
@@ -1262,11 +982,12 @@
     refitOnLateLoads();
   }
 
-  // If the row naturally wrapped (because content didn't fit one line), insert
-  // forced breaks at evenly-spaced word boundaries so the lines have similar
-  // word counts. Only runs for 4+ word inputs and only when the user has not
-  // placed any manual breaks. The user can still toggle these breaks in edit mode.
+  // If the row naturally wrapped (because content didn't fit one line) AND
+  // the user didn't type their own line breaks, distribute words evenly
+  // across the wrapped lines. Skipped for 2-3 word names (so "First Last"
+  // stays on one line) and skipped when the user typed any newlines.
   async function autoBalanceWrap() {
+    if (lastRendered.includes("\n")) return;
     if (resultEl.querySelector(".tile.space.break")) return;
     const tiles = [...resultEl.querySelectorAll(".tile")];
     if (tiles.length < 2) return;
@@ -1278,7 +999,7 @@
     const W = wordCount(lastRendered);
     if (W < 4) return;
 
-    const spaceTiles = [...resultEl.querySelectorAll(".tile.space")];
+    const spaceTiles = [...resultEl.querySelectorAll(".tile.space:not(.break)")];
     const wordsPerLine = Math.ceil(W / lineCount);
 
     let wordIdx = 1;
@@ -1435,28 +1156,15 @@
     }
   });
 
-  // Tile click handler:
-  // - Space tile in edit mode → SELECT it (visual highlight). Pressing Return
-  //   commits the break. Clicking the same space again deselects it.
-  // - Letter tile → re-roll just that single letter's variant (smooth crossfade).
-  // - Disabled in gallery mode (every variant is already on screen).
+  // Tile click handler: clicking a letter re-rolls just that letter's
+  // variant. Spaces and breaks are inert (the user controls breaks by typing
+  // newlines into the input field).
   resultEl.addEventListener("click", (e) => {
     if (isShowingGallery) return;
     const tile = e.target.closest(".tile");
     if (!tile) return;
 
-    if (tile.classList.contains("space")) {
-      if (isEditMode) {
-        if (selectedSpace === tile) {
-          clearSelectedSpace();
-        } else {
-          if (selectedSpace) selectedSpace.classList.remove("selected");
-          selectedSpace = tile;
-          tile.classList.add("selected");
-        }
-      }
-      return;
-    }
+    if (tile.classList.contains("space")) return;
 
     if (tile.classList.contains("missing")) return;
 
