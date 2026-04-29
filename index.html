@@ -519,7 +519,7 @@
           </svg>
         </button>
       </form>
-      <p class="form-hint"><kbd>Shift</kbd> + <kbd>Enter</kbd> for a line break · <kbd>Enter</kbd> to render</p>
+      <p class="form-hint">Tip: <kbd>Shift</kbd> + <kbd>Enter</kbd> adds a line break for custom formatting.</p>
       <div id="status" class="status">Loading…</div>
     </section>
   </div>
@@ -982,12 +982,18 @@
     refitOnLateLoads();
   }
 
+  // Default-to-one-line threshold: anything up to this many characters stays
+  // single-line by default. A full first/middle/last name (~28 chars) is
+  // comfortably under this. The user can still force a multi-line layout
+  // by typing Shift+Enter wherever they want a break.
+  const ONE_LINE_CHAR_LIMIT = 40;
+
   // If the row naturally wrapped (because content didn't fit one line) AND
-  // the user didn't type their own line breaks, distribute words evenly
-  // across the wrapped lines. Skipped for 2-3 word names (so "First Last"
-  // stays on one line) and skipped when the user typed any newlines.
+  // the user didn't type their own line breaks AND the input is past the
+  // one-line threshold, distribute words evenly across the wrapped lines.
   async function autoBalanceWrap() {
     if (lastRendered.includes("\n")) return;
+    if (lastRendered.length <= ONE_LINE_CHAR_LIMIT) return;
     if (resultEl.querySelector(".tile.space.break")) return;
     const tiles = [...resultEl.querySelectorAll(".tile")];
     if (tiles.length < 2) return;
