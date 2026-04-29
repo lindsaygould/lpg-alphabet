@@ -1107,15 +1107,34 @@
     const sumRatios = ratios.reduce((s, r) => s + r, 0);
     if (!sumRatios) return;
 
-    // Baseline: the height that would fit everything on one line. A small
-    // safety margin is subtracted to absorb subpixel rounding accumulation
-    // (without it, names like "Lindsay Alison Gould" can compute to a height
-    // that overflows the row by 1-2 pixels, triggering an unwanted wrap).
+    // Baseline: the height that would fit everything on one line. A 4%
+    // safety budget is subtracted because (a) tile widths render at
+    // subpixel precision and the browser rounds inconsistently, and (b)
+    // each render picks new photo variants whose aspect ratios sum slightly
+    // differently. Without a real safety margin, names like "Lindsay Alison
+    // Gould" wrap on some renders and not others depending on which photos
+    // happened to be picked. 4% is enough headroom to absorb that variance.
     const rowWidth = resultEl.getBoundingClientRect().width;
-    const SAFETY_MARGIN = 10;
-    const fittedH = (rowWidth - gap * Math.max(0, tiles.length - 1) - SAFETY_MARGIN) / sumRatios;
+    const fittedH = (rowWidth * 0.96 - gap * Math.max(0, tiles.length - 1)) / sumRatios;
     const h = Math.max(min, Math.min(max, fittedH));
     resultEl.style.setProperty("--tile-h", h + "px");
+
+    // Verify after layout: if any tile rendered on a different visual row
+    // (i.e. a wrap still happened), nudge h down further until it fits.
+    // Capped at 3 retries so we never spin.
+    await new Promise((r) => requestAnimationFrame(r));
+    if (myToken !== fitToken) return;
+    const placed = [...resultEl.querySelectorAll(".tile")];
+    let currentH = h;
+    for (let i = 0; i < 3; i++) {
+      const tops = new Set(placed.map((t) => Math.round(t.getBoundingClientRect().top)));
+      if (tops.size <= 1) break;
+      currentH = Math.max(min, currentH * 0.94);
+      resultEl.style.setProperty("--tile-h", currentH + "px");
+      await new Promise((r) => requestAnimationFrame(r));
+      if (myToken !== fitToken) return;
+      if (currentH <= min) break;
+    }
   }
 
   // Refit on viewport resize.
