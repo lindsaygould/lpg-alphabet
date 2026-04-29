@@ -644,6 +644,7 @@
         img.alt = ch;
         img.loading = "eager";
         img.decoding = "async";
+        attachErrorFallback(img, ch, i);
         tile.appendChild(img);
       } else {
         tile.className = "tile missing";
@@ -814,6 +815,7 @@
         img.alt = ch;
         img.loading = "eager";
         img.decoding = "async";
+        attachErrorFallback(img, ch, i);
         tile.appendChild(img);
       } else {
         tile.className = "tile missing";
@@ -844,6 +846,33 @@
       const refit = () => fitRow();
       img.addEventListener("load", refit, { once: true });
       img.addEventListener("error", refit, { once: true });
+    });
+  }
+
+  // Attach an error fallback to an img: if the chosen variant fails to load,
+  // pick a different one of that letter and retry. Prevents a single broken
+  // request from leaving a hole in the row.
+  function attachErrorFallback(img, ch, idx) {
+    const tried = new Set();
+    if (typeof idx === "number" && currentChoice.has(idx)) {
+      tried.add(currentChoice.get(idx));
+    } else {
+      tried.add(img.getAttribute("src"));
+    }
+    img.addEventListener("error", function onError() {
+      const allVariants = library.get(normalizeKey(ch));
+      if (!allVariants) return;
+      const untried = allVariants.filter((u) => !tried.has(u));
+      if (untried.length === 0) {
+        img.removeEventListener("error", onError);
+        return;
+      }
+      const nextUrl = untried[Math.floor(Math.random() * untried.length)];
+      tried.add(nextUrl);
+      if (typeof idx === "number") currentChoice.set(idx, nextUrl);
+      img.src = nextUrl;
+      // Layout might shift if new variant has a different aspect ratio.
+      fitRow();
     });
   }
 
