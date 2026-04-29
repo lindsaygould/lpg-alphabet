@@ -701,12 +701,15 @@
     resultEl.classList.remove("fading-out");
   }
 
+  const controlsEl = document.querySelector(".controls");
+
   // Render the default hero word (typically "alphabet"). Tiles snap in L→R.
   async function renderHero(word) {
     isShowingAlphabet = true;
     isShowingGallery = false;
     if (galleryNav) galleryNav.hidden = true;
     if (galleryToggleBtn) galleryToggleBtn.textContent = "See gallery";
+    if (controlsEl) controlsEl.hidden = false;
 
     await fadeOutExistingRow();
 
@@ -764,6 +767,9 @@
   function renderGallery() {
     isShowingAlphabet = true;
     isShowingGallery = true;
+    // Gallery is a viewing-only mode — hide the type-a-name input + tip so
+    // the user is fully in browse-the-library mode until they click Back.
+    if (controlsEl) controlsEl.hidden = true;
 
     resultEl.classList.remove("crossfade");
     resultEl.classList.add("alphabet", "gallery");
