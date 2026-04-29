@@ -702,14 +702,15 @@
   }
 
   const controlsEl = document.querySelector(".controls");
+  const headerActionsEl = document.querySelector(".header-actions");
 
   // Render the default hero word (typically "alphabet"). Tiles snap in L→R.
   async function renderHero(word) {
     isShowingAlphabet = true;
     isShowingGallery = false;
     if (galleryNav) galleryNav.hidden = true;
-    if (galleryToggleBtn) galleryToggleBtn.textContent = "See gallery";
     if (controlsEl) controlsEl.hidden = false;
+    if (headerActionsEl) headerActionsEl.hidden = false;
 
     await fadeOutExistingRow();
 
@@ -767,9 +768,11 @@
   function renderGallery() {
     isShowingAlphabet = true;
     isShowingGallery = true;
-    // Gallery is a viewing-only mode — hide the type-a-name input + tip so
-    // the user is fully in browse-the-library mode until they click Back.
+    // Gallery is a viewing-only mode — hide the type-a-name input + tip and
+    // the header's "See gallery" link (the gallery's own Back button is the
+    // way out, so no toggle button is needed).
     if (controlsEl) controlsEl.hidden = true;
+    if (headerActionsEl) headerActionsEl.hidden = true;
 
     resultEl.classList.remove("crossfade");
     resultEl.classList.add("alphabet", "gallery");
@@ -823,9 +826,6 @@
     lastRendered = "__gallery__";
     currentChoice = new Map();
     resultEl.dataset.empty = "false";
-
-    if (galleryToggleBtn) galleryToggleBtn.textContent = "Hide gallery";
-
   }
 
   // Soft-bias random pick. Items with higher weight are more likely, but every
@@ -1184,15 +1184,11 @@
     Promise.all(swapPromises).then(() => fitRow());
   }
 
+  // "See gallery" always enters gallery view. Exit is via the Back button
+  // inside the gallery's own nav — no toggle here.
   galleryToggleBtn.addEventListener("click", () => {
-    if (isShowingGallery) {
-      // Hide gallery → return to default hero word
-      wordInput.value = "";
-      renderHero(HERO_WORD);
-    } else {
-      wordInput.value = "";
-      renderGallery();
-    }
+    wordInput.value = "";
+    renderGallery();
   });
 
   // Tile click handler: clicking a letter re-rolls just that letter's
