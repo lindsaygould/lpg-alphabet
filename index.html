@@ -388,6 +388,18 @@
     color: var(--ink);
   }
   .row.editing .tile.space:hover { background: rgba(0, 0, 0, 0.04); }
+
+  /* Selected space (clicked, awaiting Return). The "↵" is fully visible and
+     bolder; background is a touch stronger than hover so the user can see
+     where they're about to insert/remove a break. Pressing Return commits. */
+  .row.editing .tile.space.selected {
+    background: rgba(0, 0, 0, 0.1);
+  }
+  .row.editing .tile.space.selected::before {
+    opacity: 1 !important;
+    color: var(--ink) !important;
+    font-weight: 500;
+  }
   .tile img {
     height: 100%;
     width: auto;
@@ -650,7 +662,7 @@
       <nav class="gallery-nav" id="gallery-nav" hidden aria-label="Jump to letter"></nav>
       <div class="row" id="result" data-empty="true" aria-live="polite"></div>
       <input type="range" id="width-slider" class="width-slider" min="20" max="100" value="100" hidden aria-label="Output width" orient="vertical">
-      <p class="byline" id="byline">Click any photograph to swap variants. Press Enter to re-roll a name.<span id="edit-link-wrap" hidden> · <button class="link-btn-inline" id="edit-toggle" type="button">Edit formatting</button></span> · <button class="link-btn-inline" id="gallery-toggle" type="button">See gallery</button></p>
+      <p class="byline" id="byline"><span id="byline-text">Click any photograph to swap variants. Press Enter to re-roll a name.</span><span id="edit-link-wrap" hidden> · <button class="link-btn-inline" id="edit-toggle" type="button">Edit formatting</button></span> · <button class="link-btn-inline" id="gallery-toggle" type="button">See gallery</button></p>
       <div class="edit-toolbar" id="edit-toolbar" hidden>
         <div class="edit-group" role="group" aria-label="Alignment">
           <span class="edit-label">Align</span>
@@ -740,9 +752,14 @@
   const editLinkWrap = document.getElementById("edit-link-wrap");
   const doneEditBtn = document.getElementById("done-edit");
   const resetFormatBtn = document.getElementById("reset-format");
+  const bylineText = document.getElementById("byline-text");
+
+  const BYLINE_DEFAULT = "Click any photograph to swap variants. Press Enter to re-roll a name.";
+  const BYLINE_EDIT = "Click between words, then press Return for a line break.";
 
   let isEditMode = false;
   let userAlign = "center";
+  let selectedSpace = null; // space tile awaiting a Return commit
 
   function applyRowWidth() {
     if (!widthSlider) return;
@@ -775,12 +792,21 @@
     refreshAlignButtons();
   }
 
+  function clearSelectedSpace() {
+    if (selectedSpace) {
+      selectedSpace.classList.remove("selected");
+      selectedSpace = null;
+    }
+  }
+
   function enterEditMode() {
     if (isEditMode) return;
     isEditMode = true;
     resultEl.classList.add("editing");
     if (widthSlider) widthSlider.hidden = false;
     if (editToolbar) editToolbar.hidden = false;
+    if (bylineText) bylineText.textContent = BYLINE_EDIT;
+    if (editLinkWrap) editLinkWrap.hidden = true;
   }
 
   function exitEditMode() {
@@ -789,6 +815,10 @@
     resultEl.classList.remove("editing");
     if (widthSlider) widthSlider.hidden = true;
     if (editToolbar) editToolbar.hidden = true;
+    if (bylineText) bylineText.textContent = BYLINE_DEFAULT;
+    clearSelectedSpace();
+    // Re-show the "Edit formatting" link if we're still on a multi-word render.
+    if (editLinkWrap && resultEl.classList.contains("multi-word")) editLinkWrap.hidden = false;
   }
 
   function wordCount(str) {
@@ -797,7 +827,9 @@
 
   function updateMultiWordState(word) {
     const isMulti = wordCount(word) >= 2 && !isShowingGallery && !isShowingAlphabet;
-    if (editLinkWrap) editLinkWrap.hidden = !isMulti;
+    // Edit-formatting link is shown only outside edit mode; once the user is
+    // already editing, the toolbar's Done button is the way out.
+    if (editLinkWrap) editLinkWrap.hidden = !isMulti || isEditMode;
     resultEl.classList.toggle("multi-word", isMulti);
     if (!isMulti) exitEditMode();
   }
@@ -891,6 +923,18 @@
 
   form.addEventListener("submit", (e) => {
     e.preventDefault();
+
+    // In edit-formatting mode, Return never regenerates — it commits a
+    // selected break (or does nothing if no space is selected).
+    if (isEditMode) {
+      if (selectedSpace) {
+        selectedSpace.classList.toggle("break");
+        clearSelectedSpace();
+        requestAnimationFrame(() => fitRow());
+      }
+      return;
+    }
+
     const word = wordInput.value;
     if (!word.trim()) {
       // Empty input: if we have a persisted name on screen, re-roll it; else reset to default.
@@ -1146,6 +1190,8 @@
     resultEl.classList.remove("crossfade", "entering", "gallery");
     resultEl.style.removeProperty("--tile-h");
     resultEl.innerHTML = "";
+    // Any space the user had selected is now detached — drop the reference.
+    selectedSpace = null;
 
     // Group letters into .word containers ONLY for multi-word inputs (so multi-
     // word names never split a word across lines). Single-word inputs render
@@ -1390,7 +1436,8 @@
   });
 
   // Tile click handler:
-  // - Space tile in multi-word mode → toggle a forced line break (reversible).
+  // - Space tile in edit mode → SELECT it (visual highlight). Pressing Return
+  //   commits the break. Clicking the same space again deselects it.
   // - Letter tile → re-roll just that single letter's variant (smooth crossfade).
   // - Disabled in gallery mode (every variant is already on screen).
   resultEl.addEventListener("click", (e) => {
@@ -1399,10 +1446,14 @@
     if (!tile) return;
 
     if (tile.classList.contains("space")) {
-      if (resultEl.classList.contains("multi-word")) {
-        tile.classList.toggle("break");
-        // After wrap state changes, baseline tile height should re-fit.
-        requestAnimationFrame(() => fitRow());
+      if (isEditMode) {
+        if (selectedSpace === tile) {
+          clearSelectedSpace();
+        } else {
+          if (selectedSpace) selectedSpace.classList.remove("selected");
+          selectedSpace = tile;
+          tile.classList.add("selected");
+        }
       }
       return;
     }
