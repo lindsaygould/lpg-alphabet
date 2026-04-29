@@ -662,10 +662,11 @@
 
     // Wait for layout to be applied (so tiles are sized correctly) before revealing.
     // Tiles are opacity 0 until .entering, so any reflow happens invisibly.
-    await Promise.race([fitRow(), new Promise((r) => setTimeout(r, 600))]);
+    await Promise.race([fitRow(), new Promise((r) => setTimeout(r, 1500))]);
     requestAnimationFrame(() => requestAnimationFrame(() => {
       resultEl.classList.add("entering");
     }));
+    refitOnLateLoads();
   }
 
   // Render every photograph in the library, in alphabetical order. Wraps freely.
@@ -826,10 +827,24 @@
     });
 
     // Phase 3: wait for layout to settle (tiles invisible during this), then snap-in L→R.
-    await Promise.race([fitRow(), new Promise((r) => setTimeout(r, 600))]);
+    await Promise.race([fitRow(), new Promise((r) => setTimeout(r, 1500))]);
     requestAnimationFrame(() => requestAnimationFrame(() => {
       resultEl.classList.add("entering");
     }));
+    refitOnLateLoads();
+  }
+
+  // Re-run fitRow as each image finishes loading. Handles cold-cache first renders
+  // where the initial fit ran with incomplete naturalWidth/Height info — the row
+  // adjusts to its proper one-line layout once each photo decodes.
+  function refitOnLateLoads() {
+    const imgs = [...resultEl.querySelectorAll("img")];
+    imgs.forEach((img) => {
+      if (img.complete && img.naturalWidth > 0) return;
+      const refit = () => fitRow();
+      img.addEventListener("load", refit, { once: true });
+      img.addEventListener("error", refit, { once: true });
+    });
   }
 
   // Pick the largest tile height (within min/max) that lets the whole word fit on one line.
