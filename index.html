@@ -228,8 +228,14 @@
     cursor: not-allowed;
   }
 
-  /* The output: a row of photographs that fuse into one composition. */
+  /* The output: a row of photographs that fuse into one composition. The
+     explicit `width: 100%` is important — without it, the row sizes to its
+     content (max-content) before fitRow runs, which then measures a phantom
+     wider width and computes `--tile-h` against the wrong number, causing
+     short multi-word inputs (like "Lindsay Alison Gould") to wrap when
+     they'd otherwise fit on one line. */
   .row {
+    width: 100%;
     display: flex;
     flex-wrap: wrap;
     gap: var(--gap);
@@ -1101,11 +1107,13 @@
     const sumRatios = ratios.reduce((s, r) => s + r, 0);
     if (!sumRatios) return;
 
-    // Baseline: the height that would fit everything on one line. If the row's
-    // max-width has been narrowed via the slider, this height drops; once it
-    // hits the min, flex-wrap on .row breaks between words (never within them).
+    // Baseline: the height that would fit everything on one line. A small
+    // safety margin is subtracted to absorb subpixel rounding accumulation
+    // (without it, names like "Lindsay Alison Gould" can compute to a height
+    // that overflows the row by 1-2 pixels, triggering an unwanted wrap).
     const rowWidth = resultEl.getBoundingClientRect().width;
-    const fittedH = (rowWidth - gap * Math.max(0, tiles.length - 1)) / sumRatios;
+    const SAFETY_MARGIN = 10;
+    const fittedH = (rowWidth - gap * Math.max(0, tiles.length - 1) - SAFETY_MARGIN) / sumRatios;
     const h = Math.max(min, Math.min(max, fittedH));
     resultEl.style.setProperty("--tile-h", h + "px");
   }
