@@ -530,6 +530,13 @@
     return t;
   }
 
+  // Punctuation that might appear in a typed name. No library exists for these,
+  // so they're silently dropped from the rendered output ("Lindsay!" → "Lindsay").
+  const PUNCT = new Set("'\",.!?&():;-`\u2018\u2019\u201C\u201D\u2013\u2014");
+  function isPunctuation(ch) {
+    return ch.length === 1 && PUNCT.has(ch);
+  }
+
   async function loadManifest() {
     try {
       const res = await fetch("manifest.json", { cache: "no-store" });
@@ -817,6 +824,8 @@
         img.decoding = "async";
         attachErrorFallback(img, ch, i);
         tile.appendChild(img);
+      } else if (isPunctuation(ch)) {
+        return;
       } else {
         tile.className = "tile missing";
         tile.textContent = ch.toUpperCase();
@@ -1029,6 +1038,7 @@
       }
       const url = currentChoice.get(i);
       if (!url) {
+        if (isPunctuation(ch)) continue;
         items.push({ kind: "missing", ch, w: MISSING_W });
         continue;
       }
