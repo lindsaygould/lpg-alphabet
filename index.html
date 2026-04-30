@@ -1270,11 +1270,15 @@
     }).filter((l) => l.length > 0);
     if (!cleanLines.length) return;
 
-    // Use the first available image to set TILE_H baseline.
+    // Use the first available image to set TILE_H baseline. Capped low so
+    // the downloaded PNG looks fine for sharing online but is too small to
+    // print at a meaningful size — the rendered website is meant to be the
+    // primary viewing experience, not a print-quality file source.
     const firstImgTile = allTiles.find((t) => t.querySelector("img"));
     if (!firstImgTile) return;
     const probe = await loadImage(firstImgTile.querySelector("img").src);
-    const TILE_H = Math.min(probe.naturalHeight, 1600);
+    const DOWNLOAD_CAP = 400;
+    const TILE_H = Math.min(probe.naturalHeight, DOWNLOAD_CAP);
     const GAP = Math.round(TILE_H * 0.018);
     const ROW_GAP = Math.round(TILE_H * 0.06);
     const SPACE_W = Math.round(TILE_H * 0.18);
@@ -1342,12 +1346,12 @@
     canvas.toBlob((blob) => {
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      a.download = `${safeName}.png`;
+      a.download = `${safeName}.jpg`;
       document.body.appendChild(a);
       a.click();
       a.remove();
       setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-    }, "image/png");
+    }, "image/jpeg", 0.85);
   });
 
   function loadImage(src) {
