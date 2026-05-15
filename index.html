@@ -435,6 +435,23 @@
   }
   .gallery-letter-divider:first-child { margin-top: 0; }
 
+  /* Master section header that marks the transition from letters to
+     punctuation. Slightly more spaced + a hairline above so the boundary
+     reads as a section change, not just another divider. */
+  .gallery-section-header {
+    flex-basis: 100%;
+    text-align: center;
+    margin: 48px 0 20px;
+    padding-top: 28px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.32em;
+    color: var(--ink-dim);
+    text-transform: uppercase;
+    border-top: 1px solid var(--line);
+    scroll-margin-top: 64px;
+  }
+
   html { scroll-behavior: smooth; }
 
   .link-btn {
@@ -780,8 +797,30 @@
     refitOnLateLoads();
   }
 
-  // Render every photograph in the library, in alphabetical order. Wraps freely.
-  // Each letter is preceded by a divider, and a sticky letter-nav at the top jumps to each.
+  // Library keys for punctuation map to human-readable glyphs in the gallery.
+  // (a–z keys are 1 character so they don't need a map.)
+  const KEY_DISPLAY = {
+    ampersand: "&",
+    apostrophe: "'",
+    comma: ",",
+    dash: "—",
+    ellipsis: "…",
+    exclamation: "!",
+    period: ".",
+    question: "?",
+  };
+  function displayChar(key) {
+    if (key.length === 1) return key.toUpperCase();
+    return KEY_DISPLAY[key] || key;
+  }
+  function isLetterKey(key) {
+    return key.length === 1 && key >= "a" && key <= "z";
+  }
+
+  // Render every photograph in the library: letters A–Z first, then a
+  // "Punctuation" section at the end with each non-letter key (&, comma,
+  // dash, ellipsis, period, question…) shown as its own subgroup with a
+  // symbol divider. Sticky letter-nav at the top jumps to each section.
   function renderGallery() {
     isShowingAlphabet = true;
     isShowingGallery = true;
@@ -796,7 +835,10 @@
     resultEl.style.removeProperty("--tile-h");
     resultEl.innerHTML = "";
 
-    const sortedKeys = [...library.keys()].sort();
+    const allKeys = [...library.keys()];
+    const letterKeys = allKeys.filter(isLetterKey).sort();
+    const punctKeys = allKeys.filter((k) => !isLetterKey(k)).sort();
+    const sortedKeys = [...letterKeys, ...punctKeys];
 
     // Build the sticky letter nav. Prepend a clear "Back" button.
     galleryNav.innerHTML = "";
@@ -813,17 +855,33 @@
     for (const key of sortedKeys) {
       const a = document.createElement("a");
       a.href = `#letter-${key}`;
-      a.textContent = key.toUpperCase();
+      a.textContent = displayChar(key);
       galleryNav.appendChild(a);
     }
     galleryNav.hidden = false;
 
-    // Add a divider before each letter group, then all that letter's photographs.
-    for (const key of sortedKeys) {
+    // Letters first, each with its own divider.
+    for (const key of letterKeys) {
+      appendGallerySection(key);
+    }
+
+    // Master "Punctuation" header, then each punctuation key as its own
+    // subgroup with the actual symbol as the divider.
+    if (punctKeys.length > 0) {
+      const sectionHeader = document.createElement("div");
+      sectionHeader.className = "gallery-section-header";
+      sectionHeader.textContent = "Punctuation";
+      resultEl.appendChild(sectionHeader);
+      for (const key of punctKeys) {
+        appendGallerySection(key);
+      }
+    }
+
+    function appendGallerySection(key) {
       const divider = document.createElement("div");
       divider.className = "gallery-letter-divider";
       divider.id = `letter-${key}`;
-      divider.textContent = key.toUpperCase();
+      divider.textContent = displayChar(key);
       resultEl.appendChild(divider);
 
       for (const url of library.get(key)) {
