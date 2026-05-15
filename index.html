@@ -203,7 +203,7 @@
   }
   .link-btn-inline:disabled { opacity: 0.4; cursor: not-allowed; }
 
-  /* Download icon button — sits next to Enter in the form. */
+  /* Download icon button — sits next to Return in the form. */
   .icon-btn {
     display: inline-flex;
     align-items: center;
@@ -270,7 +270,7 @@
   .tile.space { cursor: default; }
   /* Spaces and breaks are visually inert — no markers, no click targets. The
      user controls breaks by typing them directly into the input field
-     (Shift+Enter), so the rendered row just *shows* the layout. */
+     (Shift+Return), so the rendered row just *shows* the layout. */
   .tile img {
     height: 100%;
     width: auto;
@@ -635,6 +635,13 @@
   const PUNCT = new Set("'\",.!?&+():;-`\u2018\u2019\u201C\u201D\u2013\u2014\u2026");
   function isPunctuation(ch) {
     return ch.length === 1 && PUNCT.has(ch);
+  }
+
+  // Collapse runs of 3+ periods into a single "\u2026" so the input maps to the
+  // ellipsis library instead of rendering as three consecutive period tiles.
+  function preprocessInput(str) {
+    if (!str) return "";
+    return str.replace(/\.{3,}/g, "\u2026");
   }
 
   async function loadManifest() {
