@@ -710,6 +710,21 @@
       form.requestSubmit();
     }
   });
+
+  // Global Enter handler: re-render even if focus has drifted off the
+  // textarea (e.g. after the user clicked a photo to swap a letter). Skips
+  // gallery mode and any case where focus is on something Enter should
+  // activate (a button or link).
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" || e.shiftKey || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (isShowingGallery) return;
+    const focused = document.activeElement;
+    if (focused === wordInput) return;                 // textarea handler covers this
+    const tag = focused && focused.tagName;
+    if (tag === "BUTTON" || tag === "A") return;       // let native activation happen
+    e.preventDefault();
+    form.requestSubmit();
+  });
   wordInput.addEventListener("input", () => {
     wordInput.style.height = "auto";
     wordInput.style.height = Math.min(160, wordInput.scrollHeight) + "px";
