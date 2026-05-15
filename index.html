@@ -359,6 +359,19 @@
   .row.gallery .tile:hover img {
     opacity: 1;
   }
+  /* Discourage saving individual photos from the gallery: blocks the iOS
+     long-press "Save Image" sheet and prevents browsers from registering
+     the image as selectable/draggable. Right-click is also blocked via JS
+     below. Honest-effort protection — a determined user can still grab the
+     URL from devtools — but it shuts the casual save path. */
+  .row.gallery .tile img {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-user-drag: none;
+    user-drag: none;
+    pointer-events: none;
+  }
 
   /* Letter navigation that sticks to the top while scrolling the gallery. */
   .gallery-nav {
@@ -1189,6 +1202,16 @@
   galleryToggleBtn.addEventListener("click", () => {
     wordInput.value = "";
     renderGallery();
+  });
+
+  // Block the right-click "Save Image As…" menu inside the gallery so casual
+  // visitors can't trivially download individual full-resolution letters.
+  // Doesn't affect the typed-name view (where downloading a composite via
+  // the button is allowed, capped at 400px tall).
+  resultEl.addEventListener("contextmenu", (e) => {
+    if (isShowingGallery && e.target.tagName === "IMG") {
+      e.preventDefault();
+    }
   });
 
   // Tile click handler: clicking a letter re-rolls just that letter's
