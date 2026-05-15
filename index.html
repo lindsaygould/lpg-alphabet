@@ -604,14 +604,18 @@
       if (t === ".") return "period";
       if (t === "!") return "exclamation";
       if (t === "?") return "question";
-      if (t === "&") return "ampersand";
+      if (t === "&" || t === "+") return "ampersand";
+      if (t === "-") return "dash";
+      if (t === "‘" || t === "’") return "apostrophe"; // smart single quotes
+      if (t === "–" || t === "—") return "dash";       // en/em dash
+      if (t === "…") return "ellipsis";                      // …
     }
     return t;
   }
 
   // Punctuation that might appear in a typed name. No library exists for these,
   // so they're silently dropped from the rendered output ("Lindsay!" → "Lindsay").
-  const PUNCT = new Set("'\",.!?&():;-`\u2018\u2019\u201C\u201D\u2013\u2014");
+  const PUNCT = new Set("'\",.!?&+():;-`\u2018\u2019\u201C\u201D\u2013\u2014\u2026");
   function isPunctuation(ch) {
     return ch.length === 1 && PUNCT.has(ch);
   }
@@ -662,7 +666,7 @@
 
   form.addEventListener("submit", (e) => {
     e.preventDefault();
-    const word = wordInput.value;
+    const word = preprocessInput(wordInput.value);
     if (!word.trim()) {
       // Empty input: if we have a persisted name on screen, re-roll it; else reset to default.
       if (lastRendered && lastRendered !== HERO_WORD && lastRendered !== "__gallery__") {
@@ -895,7 +899,7 @@
   }
 
   function render({ rerandomize, word: explicitWord } = {}) {
-    const word = explicitWord !== undefined ? explicitWord : wordInput.value;
+    const word = preprocessInput(explicitWord !== undefined ? explicitWord : wordInput.value);
 
     if (!word.trim()) {
       renderHero(HERO_WORD);
@@ -956,15 +960,18 @@
         resultEl.appendChild(space);
         return;
       }
-      if (isPunctuation(ch)) return;
+
+      const key = normalizeKey(ch);
+      const variants = library.get(key);
+      // Punctuation only gets silently dropped when no photo exists for it.
+      // If Laura's added (e.g.) period/comma/dash photos, render them.
+      if ((!variants || !variants.length) && isPunctuation(ch)) return;
 
       const tile = document.createElement("div");
       tile.style.setProperty("--i", String(i));
       tile.dataset.pos = String(i);
       tile.dataset.char = ch;
 
-      const key = normalizeKey(ch);
-      const variants = library.get(key);
       if (variants && variants.length) {
         tile.className = "tile";
         const img = document.createElement("img");
