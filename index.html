@@ -597,6 +597,7 @@
   let lastRendered = "";            // word currently rendered
   let isShowingAlphabet = false;    // true when row is the static hero (default word OR gallery)
   let isShowingGallery = false;     // true when row is the full gallery of all photos
+  let buildToken = 0;               // monotonic; rapid taps bump it and stale builds bail out
 
   const HERO_WORD = "alphabet";
 
@@ -741,7 +742,10 @@
   const ANIM_FADE_OUT_MS = 140;
   const ANIM_STAGGER_MS = 40;
 
-  // Phase 1: fade out the current row's tiles L→R, then clear the DOM.
+  // Phase 1: fade out the current row's tiles L→R. The caller is responsible
+  // for removing the "fading-out" class once it's ready to clear the DOM — that
+  // way rapid taps don't have a stale fadeOut yanking the class out from under
+  // the winning build mid-animation.
   // Skipped when exiting gallery view (would be ~200 tiles → way too long).
   async function fadeOutExistingRow() {
     // Detect gallery mode by the presence of letter dividers (skip fade in that case).
@@ -754,7 +758,6 @@
     resultEl.classList.add("fading-out");
     const lastIdx = tiles.length - 1;
     await new Promise((r) => setTimeout(r, lastIdx * ANIM_STAGGER_MS + ANIM_FADE_OUT_MS + 20));
-    resultEl.classList.remove("fading-out");
   }
 
   const controlsEl = document.querySelector(".controls");
@@ -762,6 +765,7 @@
 
   // Render the default hero word (typically "alphabet"). Tiles snap in L→R.
   async function renderHero(word) {
+    const myToken = ++buildToken;
     isShowingAlphabet = true;
     isShowingGallery = false;
     if (galleryNav) galleryNav.hidden = true;
@@ -769,12 +773,13 @@
     if (headerActionsEl) headerActionsEl.hidden = false;
 
     await fadeOutExistingRow();
+    if (myToken !== buildToken) return;
 
     // Use chooseVariants so the hero word also benefits from smart randomness
     // (the two A's in "alphabet" are picked from different photos when possible).
     const newChoice = chooseVariants(word, { rerandomize: true });
 
-    resultEl.classList.remove("crossfade", "gallery", "entering");
+    resultEl.classList.remove("fading-out", "crossfade", "gallery", "entering");
     resultEl.style.removeProperty("--tile-h");
     resultEl.innerHTML = "";
 
@@ -813,7 +818,9 @@
     // Wait for layout to be applied (so tiles are sized correctly) before revealing.
     // Tiles are opacity 0 until .entering, so any reflow happens invisibly.
     await Promise.race([fitRow(), new Promise((r) => setTimeout(r, 1500))]);
+    if (myToken !== buildToken) return;
     requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (myToken !== buildToken) return;
       resultEl.classList.add("entering");
     }));
     refitOnLateLoads();
@@ -1004,13 +1011,15 @@
   }
 
   async function buildRow(word, choice) {
+    const myToken = ++buildToken;
     if (galleryNav) galleryNav.hidden = true;
 
     // Phase 1: fade out existing tiles L→R, then clear.
     await fadeOutExistingRow();
+    if (myToken !== buildToken) return;
 
     // Phase 2: build new tiles (invisible until .entering kicks in).
-    resultEl.classList.remove("crossfade", "entering", "gallery");
+    resultEl.classList.remove("fading-out", "crossfade", "entering", "gallery");
     resultEl.style.removeProperty("--tile-h");
     resultEl.innerHTML = "";
 
@@ -1087,8 +1096,11 @@
     // bottom line becomes 5 + 5 (etc.). Skip for 2-3 word names so things
     // like "First Last" never get auto-broken across two lines.
     await Promise.race([fitRow(), new Promise((r) => setTimeout(r, 1500))]);
+    if (myToken !== buildToken) return;
     if (wordCount(word) >= 4) await autoBalanceWrap();
+    if (myToken !== buildToken) return;
     requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (myToken !== buildToken) return;
       resultEl.classList.add("entering");
     }));
     refitOnLateLoads();
